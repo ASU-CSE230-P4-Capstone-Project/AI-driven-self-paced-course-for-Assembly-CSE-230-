@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { LogOut, UserCircle } from 'lucide-react';
 import { useState } from 'react';
 
+import PerformanceInsights from "./PerformanceInsights";  //new
+
 export function Dashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -522,6 +524,7 @@ export function Dashboard() {
                 )}
               </div>
             </div>
+            <PerformanceInsights />
         </div>
         )}
       </main>
