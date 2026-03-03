@@ -25,6 +25,8 @@ type AuthUser = {
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 const TOKEN_STORAGE_KEY = 'auth_token';
 const USER_STORAGE_KEY = 'auth_user';
+const LAST_ACTIVE_STORAGE_KEY = 'auth_last_active';
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 const readStoredValue = (key: string): string | null => {
   if (typeof window === 'undefined') {
@@ -35,6 +37,13 @@ const readStoredValue = (key: string): string | null => {
   } catch {
     return null;
   }
+};
+
+const readLastActive = (): number | null => {
+  const raw = readStoredValue(LAST_ACTIVE_STORAGE_KEY);
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
 };
 
 const readStoredUser = (): AuthUser | null => {
@@ -77,6 +86,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => readStoredUser());
   const [loading, setLoading] = useState(false);
 
+  // On mount or when token changes, enforce session timeout
+  useEffect(() => {
+    if (!token) return;
+    const lastActive = readLastActive();
+    if (lastActive && Date.now() - lastActive > SESSION_TIMEOUT_MS) {
+      setToken(null);
+      setUser(null);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+        window.localStorage.removeItem(USER_STORAGE_KEY);
+        window.localStorage.removeItem(LAST_ACTIVE_STORAGE_KEY);
+      }
+    }
+  }, [token]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (token) {
@@ -95,12 +119,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  const touchLastActive = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (!token) return;
+    try {
+      window.localStorage.setItem(LAST_ACTIVE_STORAGE_KEY, Date.now().toString());
+    } catch {
+      // ignore storage errors
+    }
+  }, [token]);
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(TOKEN_STORAGE_KEY);
       window.localStorage.removeItem(USER_STORAGE_KEY);
+      window.localStorage.removeItem(LAST_ACTIVE_STORAGE_KEY);
     }
   }, []);
 
@@ -144,6 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setToken(data.access_token);
         setUser(authUser);
+        touchLastActive();
         return { success: true };
       } catch (error) {
         return {
@@ -154,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     },
-    [],
+    [touchLastActive],
   );
 
   const register = useCallback(
@@ -181,7 +217,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { success: false, error: detail };
         }
 
-        return await login(email, password, { name, role, id: email });
+        const result = await login(email, password, { name, role, id: email });
+        if (result.success) {
+          touchLastActive();
+        }
+        return result;
       } catch (error) {
         return {
           success: false,
@@ -192,8 +232,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     },
-    [login],
+    [login, touchLastActive],
   );
+
+  // Track user activity to keep session alive while active and expire after inactivity
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!token) return;
+
+    const events: Array<keyof WindowEventMap> = ["click", "keydown", "mousemove", "touchstart"];
+    const handler = () => touchLastActive();
+
+    events.forEach((event) => window.addEventListener(event, handler));
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, handler));
+    };
+  }, [token, touchLastActive]);
+
+  // Periodically check for session timeout
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!token) return;
+
+    const interval = window.setInterval(() => {
+      const lastActive = readLastActive();
+      if (lastActive && Date.now() - lastActive > SESSION_TIMEOUT_MS) {
+        logout();
+      }
+    }, 60_000);
+
+    return () => window.clearInterval(interval);
+  }, [token, logout]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
