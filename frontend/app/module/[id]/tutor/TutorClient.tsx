@@ -9,7 +9,18 @@ import { Button } from "../../../login/components/ui/button";
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
-  sources?: Array<{ source_name?: string; page_number?: number }>;
+  sources?: Array<{
+    id?: string;
+    score?: number;
+    metadata?: {
+      doc_id?: string;
+      module_id?: string;
+      chunk_id?: number;
+      source_file?: string;
+      text?: string;
+      topic?: string;
+    };
+  }>;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -58,6 +69,9 @@ export default function TutorClient({ moduleId }: { moduleId: string }) {
           ? data.result.response
           : "I received your question, but I could not parse the response.";
 
+      // Backend may return either:
+      // - sources: { sources: [...] } (older format)
+      // - sources: [...] (Pinecone matches format)
       const sources: ChatMessage["sources"] =
         data?.result?.metadata?.sources?.sources ?? data?.result?.metadata?.sources ?? [];
 
@@ -77,14 +91,17 @@ export default function TutorClient({ moduleId }: { moduleId: string }) {
   };
 
   return (
-    <Card className="border-2 shadow-md">
-      <CardHeader>
-        <CardTitle className="text-xl text-gray-900">Socratic CourseTutor</CardTitle>
+    <Card className="overflow-hidden border border-slate-200/70 bg-white/90 shadow-xl backdrop-blur">
+      <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+        <CardTitle className="text-xl font-semibold text-slate-900">Socratic CourseTutor</CardTitle>
+        <p className="text-sm text-slate-600">
+          Ask concise module questions for grounded answers with source chunks.
+        </p>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="h-96 overflow-y-auto rounded-lg border border-gray-200 p-4 space-y-4 bg-white">
+      <CardContent className="space-y-4 p-5">
+        <div className="h-96 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-4 shadow-inner">
           {messages.length === 0 ? (
-            <p className="text-gray-500 text-sm">
+            <p className="rounded-lg border border-dashed border-slate-300 bg-white p-3 text-sm text-slate-500">
               Ask a question about Module {moduleId} to get started.
             </p>
           ) : (
@@ -93,22 +110,33 @@ export default function TutorClient({ moduleId }: { moduleId: string }) {
                 key={`message-${index}`}
                 className={`p-3 rounded-lg ${
                   message.role === "user"
-                    ? "bg-[#fff0f5] border border-[#800020]/50 text-gray-900"
-                    : "bg-gray-50 border border-gray-200 text-gray-900"
+                    ? "bg-gradient-to-br from-rose-50 to-rose-100/70 border border-rose-200 text-slate-900"
+                    : "bg-white border border-slate-200 text-slate-900 shadow-sm"
                 }`}
               >
-                <p className="text-sm font-semibold mb-1">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {message.role === "user" ? "You" : "Tutor"}
                 </p>
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                 {message.sources && message.sources.length > 0 && (
-                  <div className="mt-3 text-xs text-gray-500">
-                    <p className="font-semibold text-gray-600 mb-1">Citations:</p>
-                    <ul className="list-disc pl-4 space-y-1">
+                  <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600">
+                    <p className="mb-1 font-semibold text-slate-700">Sources used</p>
+                    <ul className="list-disc pl-4 space-y-2">
                       {message.sources.map((source, idx) => (
-                        <li key={`${source.source_name}-${idx}`}>
-                          {source.source_name ?? "Knowledge Base"}
-                          {source.page_number ? ` · Page ${source.page_number}` : null}
+                        <li key={`${source.id ?? "source"}-${idx}`}>
+                          <div className="text-[11px] font-medium text-slate-700">
+                            {source.metadata?.source_file ??
+                              source.metadata?.doc_id ??
+                              source.id ??
+                              "Knowledge Base"}
+                            {typeof source.metadata?.chunk_id === "number" ? ` · Chunk ${source.metadata?.chunk_id}` : null}
+                            {typeof source.score === "number" ? ` · Score ${source.score.toFixed(3)}` : null}
+                          </div>
+                          {source.metadata?.text ? (
+                            <div className="text-[11px] text-slate-500">
+                              {source.metadata.text.length > 220 ? `${source.metadata.text.slice(0, 220)}...` : source.metadata.text}
+                            </div>
+                          ) : null}
                         </li>
                       ))}
                     </ul>
@@ -117,9 +145,25 @@ export default function TutorClient({ moduleId }: { moduleId: string }) {
               </div>
             ))
           )}
+          {isLoading && (
+            <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm animate-pulse">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Tutor
+              </p>
+              <div className="space-y-2">
+                <div className="h-3 w-11/12 rounded bg-slate-200" />
+                <div className="h-3 w-10/12 rounded bg-slate-200" />
+                <div className="h-3 w-8/12 rounded bg-slate-200" />
+              </div>
+            </div>
+          )}
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p className="rounded-md border border-rose-200 bg-rose-50 p-2 text-sm text-rose-700">
+            {error}
+          </p>
+        )}
 
         <div className="space-y-3">
           <Textarea
@@ -128,10 +172,14 @@ export default function TutorClient({ moduleId }: { moduleId: string }) {
             placeholder="Ask about this module..."
             rows={3}
             disabled={isLoading}
-            className="bg-white text-gray-900 placeholder:text-gray-500"
+            className="resize-none rounded-xl border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:ring-slate-500/20"
           />
           <div className="flex justify-end">
-            <Button onClick={sendMessage} disabled={isLoading || !input.trim()}>
+            <Button
+              onClick={sendMessage}
+              disabled={isLoading || !input.trim()}
+              className="rounded-lg bg-slate-900 px-5 text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60"
+            >
               {isLoading ? "Thinking..." : "Send"}
             </Button>
           </div>

@@ -39,3 +39,33 @@ class CreateAIQueryRequest(BaseModel):
 class QuizGenerationRequest(BaseModel):
     module_id: str
     num_questions: int = Field(ge=1, le=20, default=10)
+
+
+class PineconeIngestRequest(BaseModel):
+    text: str = Field(min_length=1)
+    doc_id: str = Field(min_length=1)
+    module_id: str | None = None
+    topic: str | None = None
+    source_file: str | None = None
+    namespace: str | None = None
+    chunk_size: int = Field(default=1200, ge=500, le=12000)
+    chunk_overlap: int = Field(default=250, ge=0, le=4000)
+    metadata: dict | None = None
+
+
+class PineconeSearchRequest(BaseModel):
+    query: str = Field(min_length=1)
+    top_k: int = Field(default=5, ge=1, le=20)
+    namespace: str | None = None
+    filter: dict | None = None
+
+
+class PineconeIngestFolderRequest(BaseModel):
+    folder_path: str = "/app/knowledge-base"
+    namespace: str | None = None
+    module_id: str | None = None
+    topic: str | None = None
+    chunk_size: int = Field(default=1200, ge=500, le=12000)
+    chunk_overlap: int = Field(default=250, ge=0, le=4000)
+    include_extensions: list[str] = Field(default_factory=lambda: [".pdf"])
+    max_files: int = Field(default=5, ge=1, le=1000)

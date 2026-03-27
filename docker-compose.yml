@@ -25,6 +25,14 @@ services:
       - CORS_ALLOW_ORIGINS=http://localhost:3000,http://frontend:3000
       - CREATEAI_API_TOKEN=${CREATEAI_API_TOKEN}
       - CREATEAI_API_URL=${CREATEAI_API_URL}
+      - PINECONE_API_KEY=${PINECONE_API_KEY:-}
+      - PINECONE_INDEX=${PINECONE_INDEX:-}
+      - PINECONE_ENVIRONMENT=${PINECONE_ENVIRONMENT:-}
+      - PINECONE_HOST=${PINECONE_HOST:-}
+      - LOCAL_EMBEDDING_MODEL=${LOCAL_EMBEDDING_MODEL:-BAAI/bge-small-en-v1.5}
+      - LOCAL_EMBEDDING_DIM=${LOCAL_EMBEDDING_DIM:-384}
+    volumes:
+      - "./Knowledge Base:/app/knowledge-base:ro"
     depends_on:
       - db
     ports:

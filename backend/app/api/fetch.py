@@ -2,12 +2,14 @@ import json
 import re
 import html
 import ast
+import os
 from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import APIRouter, HTTPException, status
 
 from app.models.request_models import CreateAIQueryRequest, QuizGenerationRequest
 from app.services.ai_service import CreateAIService, CreateAIServiceError
+from app.services import embedding_service, pinecone_service
 
 router = APIRouter(tags=["ai"])
 createai_service = CreateAIService()
@@ -424,19 +426,109 @@ def extract_and_validate_questions_from_ai_result(result: Any, expected_num: int
 # API endpoints
 # -----------------------
 
+def _extract_module_id(text: str | None) -> str | None:
+    if not text:
+        return None
+    match = re.search(r"\bmodule\s*([0-9]+)\b", text, flags=re.IGNORECASE)
+    return match.group(1) if match else None
+
+
+def _format_retrieval_context(
+    matches: list[dict[str, Any]],
+    max_chars_per_chunk: int = 500,
+    max_total_chars: int = 2200,
+) -> str:
+    lines = ["Retrieved knowledge-base context:"]
+    consumed = 0
+    for i, m in enumerate(matches, start=1):
+        metadata = m.get("metadata") or {}
+        source = metadata.get("source_file") or metadata.get("doc_id") or "unknown"
+        score = m.get("score")
+        chunk = (metadata.get("text") or "").strip()
+        if not chunk:
+            continue
+        if len(chunk) > max_chars_per_chunk:
+            chunk = chunk[:max_chars_per_chunk].rstrip() + " ..."
+        header = f"[{i}] source={source} score={score}"
+        addition = f"{header}\n\n{chunk}\n\n"
+        if consumed + len(addition) > max_total_chars:
+            break
+        lines.append(header)
+        lines.append(chunk)
+        consumed += len(addition)
+    return "\n\n".join(lines)
+
+
+async def _retrieve_pinecone_context(prompt: str, context: str | None) -> tuple[str | None, list[dict[str, Any]]]:
+    if not pinecone_service.is_configured() or not embedding_service.is_configured():
+        return None, []
+
+    namespace = (os.getenv("PINECONE_NAMESPACE", "cse230") or "cse230").strip()
+    try:
+        top_k = int(os.getenv("PINECONE_TOP_K", "3"))
+    except ValueError:
+        top_k = 3
+    top_k = max(1, min(top_k, 5))
+
+    query_text = prompt if not context else f"{prompt}\n\nContext:\n{context}"
+    vector = await embedding_service.embed_text(query_text)
+
+    module_id = _extract_module_id(context) or _extract_module_id(prompt)
+    matches: list[dict[str, Any]] = []
+    if module_id:
+        matches = await pinecone_service.query_vectors(
+            vector=vector,
+            top_k=top_k,
+            namespace=namespace,
+            filter_={"module_id": module_id},
+            include_metadata=True,
+            include_values=False,
+        )
+
+    if not matches:
+        matches = await pinecone_service.query_vectors(
+            vector=vector,
+            top_k=top_k,
+            namespace=namespace,
+            filter_=None,
+            include_metadata=True,
+            include_values=False,
+        )
+
+    if not matches:
+        return None, []
+
+    retrieval_context = _format_retrieval_context(matches)
+    return retrieval_context, matches
+
 @router.post("/query")
 async def query_createai(request: CreateAIQueryRequest):
+    pinecone_context = None
+    pinecone_matches: list[dict[str, Any]] = []
+    try:
+        pinecone_context, pinecone_matches = await _retrieve_pinecone_context(request.prompt, request.context)
+    except Exception:
+        # Keep tutor available even if retrieval has transient issues.
+        pinecone_context, pinecone_matches = None, []
+
+    merged_context = request.context or ""
+    if pinecone_context:
+        merged_context = f"{merged_context}\n\n{pinecone_context}".strip()
+
+    # Avoid token blowups by using either Pinecone grounding OR CreateAI hosted search, not both.
+    effective_enable_search = request.enable_search if not pinecone_context else False
+
     try:
         result = await createai_service.query(
             prompt=request.prompt,
-            context=request.context,
+            context=merged_context or None,
             system_prompt=request.system_prompt,
             session_id=request.session_id,
             temperature=request.temperature,
             top_p=request.top_p,
             top_k=request.top_k,
             endpoint=request.endpoint,
-            enable_search=request.enable_search,
+            enable_search=effective_enable_search,
             search_params=request.search_params,
             extra_input=request.extra_input,
             extra_model_params=request.extra_model_params,
@@ -444,6 +536,11 @@ async def query_createai(request: CreateAIQueryRequest):
     except CreateAIServiceError as exc:
         status_code = exc.status_code or status.HTTP_502_BAD_GATEWAY
         raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+
+    if isinstance(result, dict):
+        metadata = result.setdefault("metadata", {})
+        metadata["sources"] = pinecone_matches
+        metadata["retrieval_enabled"] = bool(pinecone_context)
 
     return {"result": result}
 

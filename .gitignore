@@ -30,3 +30,6 @@ db_data
 # virtual environment
 .venv
 pjenv/
+
+# Local course PDFs (mounted in docker-compose; keep out of git)
+Knowledge Base/

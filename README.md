@@ -75,6 +75,18 @@ cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload
 - `CREATEAI_API_URL`: Optional CreateAI API endpoint URL (defaults to `https://api-main.aiml.asu.edu/query`)
 - `DATABASE_URL`: PostgreSQL connection string (automatically set in Docker Compose)
 
+### Pinecone (optional)
+Vector store for RAG or semantic search. If not set, Pinecone is disabled and the app runs without it.
+- `PINECONE_API_KEY`: API key from [Pinecone console](https://app.pinecone.io)
+- `PINECONE_HOST`: Index host URL (e.g. `your-index-xxx.svc.region.pinecone.io`), shown in the console for your index
+- `PINECONE_INDEX`: Index name (optional; used for `/pinecone/status` index description)
+- `PINECONE_ENVIRONMENT`: Optional; some setups use it for control-plane host
+
+### Local Embeddings (full-control RAG)
+- `LOCAL_EMBEDDING_MODEL`: Defaults to `BAAI/bge-small-en-v1.5` (via `fastembed`).
+- `LOCAL_EMBEDDING_DIM`: Defaults to `384` and should match Pinecone index dimension.
+- No API key is required for local embeddings.
+
 ## API Endpoints
 
 ### Authentication
@@ -86,6 +98,17 @@ cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload
 ### AI/Query
 - `POST /fetch/query` - Query CreateAI service with custom prompts
 - `POST /fetch/quiz` - Generate quiz questions
+
+### Pinecone
+- `GET /pinecone/status` - Returns whether Pinecone is configured and optional index info (safe when disabled)
+- `POST /pinecone/ingest` - Chunk + embed + upsert document text into Pinecone
+- `POST /pinecone/ingest-folder` - Bulk ingest files from mounted knowledge-base folder
+- `POST /pinecone/search` - Embed query text and search top-k vectors from Pinecone
+
+### Knowledge Base Folder Ingestion
+- Place PDFs/files in `Knowledge Base/` at repo root.
+- Backend container mounts this folder as `/app/knowledge-base`.
+- Use `POST /pinecone/ingest-folder` with default `folder_path` to ingest all PDFs.
 
 ### API Documentation
 - Interactive API docs: `http://localhost:8000/docs` (Swagger UI)
