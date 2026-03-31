@@ -26,10 +26,10 @@ export function QuizCard({
   return (
     <Card className="w-full shadow-sm">
       <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b">
-        <CardDescription className="text-gray-600">
+        <CardDescription className="text-gray-800">
           Question {questionNumber} of {totalQuestions} • {question.topic}{question.subTopic ? ` - ${question.subTopic}` : ''}
         </CardDescription>
-        <CardTitle className="text-red-900">{question.question}</CardTitle>
+        <CardTitle className="text-gray-900">{question.question}</CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
         <RadioGroup
@@ -49,20 +49,25 @@ export function QuizCard({
                 } else if (isSelected && !isCorrect) {
                   className += " border-red-500 bg-red-50";
                 } else {
-                  className += " border-gray-200";
+                  className += " border-gray-200 bg-white";
                 }
               } else {
                 className += isSelected 
-                  ? " border-red-900 bg-yellow-50" 
-                  : " border-gray-200 hover:border-red-900/30";
+                  ? " border-[#800020] bg-amber-50" 
+                  : " border-gray-200 bg-white hover:border-[#800020]/40";
               }
               
               return (
                 <div key={index} className={className}>
-                  <RadioGroupItem value={index.toString()} id={`option-${index}`} disabled={showResult} />
+                  <RadioGroupItem
+                    value={index.toString()}
+                    id={`option-${index}`}
+                    disabled={showResult}
+                    className="!border-gray-400 !text-[#800020] data-[state=checked]:!border-[#800020]"
+                  />
                   <Label 
                     htmlFor={`option-${index}`} 
-                    className="flex-1 cursor-pointer"
+                    className="flex-1 cursor-pointer text-gray-900"
                   >
                     {option}
                   </Label>

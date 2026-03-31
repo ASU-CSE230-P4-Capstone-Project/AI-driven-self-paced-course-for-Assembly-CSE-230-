@@ -69,11 +69,11 @@ export default function TeacherStudentsList({
           <Table className="text-gray-900">
             <TableHeader>
               <TableRow>
-                <TableHead className="text-[#800020] font-semibold">Student</TableHead>
-                <TableHead className="text-[#800020] font-semibold">Best %</TableHead>
-                <TableHead className="text-[#800020] font-semibold">Last %</TableHead>
-                <TableHead className="text-[#800020] font-semibold">Attempts</TableHead>
-                <TableHead className="text-[#800020] font-semibold">Grade</TableHead>
+                <TableHead className="!text-[#800020] font-semibold">Student</TableHead>
+                <TableHead className="!text-[#800020] font-semibold">Best %</TableHead>
+                <TableHead className="!text-[#800020] font-semibold">Last %</TableHead>
+                <TableHead className="!text-[#800020] font-semibold">Attempts</TableHead>
+                <TableHead className="!text-[#800020] font-semibold">Grade</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

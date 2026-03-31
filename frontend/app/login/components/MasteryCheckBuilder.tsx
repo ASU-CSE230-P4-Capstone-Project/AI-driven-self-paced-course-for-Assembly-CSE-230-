@@ -97,8 +97,8 @@ export function MasteryCheckBuilder({ modules, onCreateTest }: MasteryCheckBuild
   return (
     <Card className="border-2 border-yellow-600 shadow-sm">
       <CardHeader className="border-b border-yellow-600/20">
-        <CardTitle className="text-red-900">Question Generator</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-[#800020]">Question generator</CardTitle>
+        <CardDescription className="text-gray-800">
           Uses the backend <code className="text-xs">POST /fetch/quiz</code> CreateAI path (separate from the student AI
           Tutor). Set optional <code className="text-xs">CREATEAI_QUIZ_MODEL_*</code> env vars to use a lighter model for
           quizzes.
@@ -107,7 +107,7 @@ export function MasteryCheckBuilder({ modules, onCreateTest }: MasteryCheckBuild
       <CardContent className="pt-6 space-y-6">
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="question-count" className="text-red-900">
+            <Label htmlFor="question-count" className="text-[#800020] font-semibold">
               Number of questions
             </Label>
             <Input
@@ -121,35 +121,42 @@ export function MasteryCheckBuilder({ modules, onCreateTest }: MasteryCheckBuild
               }
               className="border-gray-300"
             />
-            <p className="text-xs text-gray-500">5–50 (minimum 5 questions per mastery).</p>
+            <p className="text-xs text-gray-800">5–50 (minimum 5 questions per mastery).</p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="module-select" className="text-red-900">
+            <Label htmlFor="module-select" className="text-[#800020] font-semibold">
               Select module
             </Label>
             <Select value={selectedModule} onValueChange={setSelectedModule}>
-              <SelectTrigger id="module-select" className="border-gray-300">
+              <SelectTrigger
+                id="module-select"
+                className="border-gray-300 bg-white text-gray-900 data-[placeholder]:text-gray-600"
+              >
                 <SelectValue placeholder="Choose a module..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white text-gray-900 border-gray-200 shadow-lg">
                 {modules.map((module) => (
-                  <SelectItem key={module.moduleName} value={module.moduleName}>
+                  <SelectItem
+                    key={module.moduleName}
+                    value={module.moduleName}
+                    className="text-gray-900 focus:bg-amber-100 focus:text-gray-900"
+                  >
                     {module.moduleName}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-800">
               {selectedModuleData?.questions.length ?? 0} analytics questions on file for this module
             </p>
           </div>
         </div>
 
-        <div className="border-2 border-yellow-600/50 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 p-6">
+        <div className="border-2 border-yellow-600/60 rounded-lg bg-amber-50/80 p-6">
           <div className="space-y-3">
-                <h3 className="text-red-900">CreateAI mastery quiz</h3>
-            <p className="text-sm text-gray-700">
+            <h3 className="text-[#800020] font-semibold text-base">CreateAI mastery quiz</h3>
+            <p className="text-sm text-gray-800">
               Generates fresh multiple-choice items for preview in the mastery test view (for demos or classroom use).
             </p>
             <Button

@@ -205,7 +205,10 @@ export function MasteryTestView({ questions, moduleName, onBack }: MasteryTestVi
         </div>
 
         {canGoNext ? (
-          <Button onClick={handleNext}>
+          <Button
+            onClick={handleNext}
+            className="!bg-[#800020] !text-white hover:!bg-[#5f0018] focus-visible:!ring-[#800020]/30"
+          >
             Next
             <ChevronRight className="w-4 h-4 ml-2" />
           </Button>

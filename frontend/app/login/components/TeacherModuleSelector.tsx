@@ -130,8 +130,8 @@ export function TeacherModuleSelector({ modules, totalStudents, onSelectModule, 
 
                 <Button 
                   onClick={() => onSelectModule(module.moduleName)} 
-                  className="w-full"
                   variant="default"
+                  className="w-full !bg-[#800020] !text-white hover:!bg-[#5f0018] focus-visible:!ring-[#800020]/30"
                 >
                   View Students
                 </Button>
