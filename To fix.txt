@@ -1,0 +1,13 @@
+Could not parse quiz questions from AI response: Could not locate/parse a JSON array in AI response. 
+Preview: [\n {\n "id": "1",\n "prompt": "Which of the following operations does 
+the ALU perform?",\n "choices": [\n {"id": "A", "text": "add", "isCorrect": true},
+\n {"id": "B", "text": "xor", "isCorrect": false},\n {"id": "C", "text": "div", "isCorrect": false},
+\n {"id": "D", "text": "mod", "isCorrect": false}\n ],\n "hint": "'add' is a basic operation performed by ALU.",
+\n "topic": "MIPS Architecture Basics",\n "source_citation":"Content Review – Question 6"\n },
+\n {\n "id":"2",\n "prompt":"What are possible Inputs/Outputs of Register File during either the read or write phases?",
+\n "choices":[\n {"id":"A","text":"Inputs – 2 32-bit Register values","isCorrect":false},\n {"id":"B","text":"Outputs – 2 32-bit 
+Register values (Read)","isCorrect":true},\n {"id":"C","text":"Inputs – 1 32-bit Register value and 1 string value (Write)","isCorrect":false},
+\n {"id":"D","text":"Output – 1 string value","isCorrect":false}\n ],\n "hint":"'Register File' dea
+
+
+Note: make questions atleast 5 per mastery. , fix frontend font for Professor Analytics Dashboard (Students page as well)

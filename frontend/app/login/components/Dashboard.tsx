@@ -6,12 +6,58 @@ import { useAuth } from '../hooks/useAuth';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { LogOut, UserCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 export function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"modules" | "review">("modules");
+  const [progressMap, setProgressMap] = useState<
+    Record<
+      string,
+      {
+        best_score_pct: number;
+        last_score_pct: number;
+        attempts: number;
+        topics?: Record<
+          string,
+          {
+            best_score_pct: number;
+            last_score_pct: number;
+            best_correct_count: number;
+            best_total_count: number;
+            last_correct_count: number;
+            last_total_count: number;
+            attempts: number;
+          }
+        >;
+      }
+    >
+  >({});
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`${API_URL}/progress/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!r.ok || cancelled) return;
+        const data = (await r.json()) as {
+          modules?: Record<string, { best_score_pct: number; attempts: number; last_score_pct: number }>;
+        };
+        if (!cancelled && data.modules) setProgressMap(data.modules);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const handleLogout = () => {
     logout();
@@ -28,7 +74,7 @@ export function Dashboard() {
         "Instruction Set Principles",
         "MIPS Architecture Basics"
       ],
-      progress: 100
+      progress: 0
     },
     2: {
       title: "MIPS Introduction, ALU and Data Transfer",
@@ -38,7 +84,7 @@ export function Dashboard() {
         "Load and Store Instructions",
         "Memory Addressing Modes"
       ],
-      progress: 100
+      progress: 0
     },
     3: {
       title: "Branch Instructions and Machine Code",
@@ -48,24 +94,46 @@ export function Dashboard() {
         "MIPS Instruction Encoding",
         "Machine Code Format"
       ],
-      progress: 50
+      progress: 0
     }
   };
 
-  const coveredConcepts: string[] = [];
-  const missedConcepts: string[] = [];
+  const scoreForModule = (mid: number) => progressMap[String(mid)]?.best_score_pct ?? 0;
+  const attemptedCount = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].filter(
+    (mid) => (progressMap[String(mid)]?.attempts ?? 0) > 0,
+  ).length;
+  const completedModuleCount = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].filter(
+    (mid) => scoreForModule(mid) >= 70,
+  ).length;
 
-  Object.entries(moduleConcepts).forEach(([id, module]) => {
-    if (module.progress === 100) {
-      coveredConcepts.push(...module.concepts);
-    } else if (module.progress > 0 && module.progress < 100) {
-      const coveredCount = Math.ceil((module.progress / 100) * module.concepts.length);
-      coveredConcepts.push(...module.concepts.slice(0, coveredCount));
-      missedConcepts.push(...module.concepts.slice(coveredCount));
-    } else {
-      missedConcepts.push(...module.concepts);
-    }
-  });
+  const overallMasteryPct = attemptedCount
+    ? Math.round(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].reduce(
+          (sum, mid) => sum + scoreForModule(mid),
+          0,
+        ) / attemptedCount,
+      )
+    : 0;
+
+  const m1 = Math.round(scoreForModule(1));
+  const m2 = Math.round(scoreForModule(2));
+  const m3 = Math.round(scoreForModule(3));
+
+  const { coveredConcepts, missedConcepts } = useMemo(() => {
+    const covered: string[] = [];
+    const missed: string[] = [];
+
+    (Object.entries(moduleConcepts) as [string, (typeof moduleConcepts)[1]][]).forEach(([id, module]) => {
+      const mid = Number(id);
+      module.concepts.forEach((concept) => {
+        const topicBestPct = progressMap[String(mid)]?.topics?.[concept]?.best_score_pct ?? 0;
+        if (topicBestPct >= 70) covered.push(concept);
+        else missed.push(concept);
+      });
+    });
+
+    return { coveredConcepts: covered, missedConcepts: missed };
+  }, [progressMap]);
 
   const lockedModuleConcepts = [
     "Function Call Mechanism", "Stack Frame Structure", "Register Conventions", "Procedure Linkage",
@@ -119,7 +187,9 @@ export function Dashboard() {
           <div className="bg-white border border-gray-200 rounded-lg p-6 flex items-center justify-between shadow-sm">
             <div>
               <p className="text-sm text-gray-600 mb-1 font-medium">Modules Completed</p>
-              <p className="text-3xl font-bold text-gray-900">2/10</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {completedModuleCount}/13
+              </p>
             </div>
             <div className="text-[#800020]">
               <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,7 +202,7 @@ export function Dashboard() {
           <div className="bg-white border border-gray-200 rounded-lg p-6 flex items-center justify-between shadow-sm">
             <div>
               <p className="text-sm text-gray-600 mb-1 font-medium">Overall Mastery</p>
-              <p className="text-3xl font-bold text-gray-900">90%</p>
+              <p className="text-3xl font-bold text-gray-900">{overallMasteryPct}%</p>
             </div>
             <div className="text-yellow-500">
               <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 20 20">
@@ -199,57 +269,88 @@ export function Dashboard() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Module 1 */}
-              <Link href="/module/1" className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Module 1: Introduction to Computer Architecture</h3>
-                <p className="text-gray-600 text-sm mb-4">Abstraction layers, performance metrics, instruction sets, MIPS basics</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-700">Progress</span>
-                    <span className="text-gray-900 font-medium">100%</span>
+              <div className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-shadow overflow-hidden">
+                <Link href="/module/1" className="block p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Module 1: Introduction to Computer Architecture</h3>
+                  <p className="text-gray-600 text-sm mb-4">Abstraction layers, performance metrics, instruction sets, MIPS basics</p>
+                  <div className="mb-2">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-semibold text-gray-700">Best quiz score</span>
+                      <span className="text-gray-900 font-medium">{m1}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-[#800020] h-2 rounded-full transition-all" style={{ width: `${Math.min(100, m1)}%` }}></div>
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-[#800020] h-2 rounded-full" style={{ width: '100%' }}></div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-gray-700 text-sm">Latest attempt</span>
+                    <span className="bg-[#800020] text-white px-4 py-1 rounded-full text-sm font-semibold">
+                      {Math.round(progressMap["1"]?.last_score_pct ?? 0)}%
+                    </span>
                   </div>
+                </Link>
+                <div className="px-6 pb-4 flex flex-wrap gap-x-4 gap-y-1 text-sm border-t border-gray-100 pt-3">
+                  <Link href="/module/1/tutor" className="text-[#800020] font-medium hover:underline">AI Tutor</Link>
+                  <Link href="/module/1/mastery" className="text-[#800020] font-medium hover:underline">Mastery quiz</Link>
+                  <Link href="/module/1/sandbox" className="text-[#800020] font-medium hover:underline">Sandbox</Link>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-700 text-sm">Mastery Score</span>
-                  <span className="bg-[#800020] text-white px-4 py-1 rounded-full text-sm font-semibold">92%</span>
-                </div>
-              </Link>
+              </div>
 
               {/* Module 2 */}
-              <Link href="/module/2" className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Module 2: MIPS Introduction, ALU and Data Transfer</h3>
-                <p className="text-gray-600 text-sm mb-4">MIPS registers, arithmetic operations, load/store instructions, memory addressing</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-700">Progress</span>
-                    <span className="text-gray-900 font-medium">100%</span>
+              <div className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-shadow overflow-hidden">
+                <Link href="/module/2" className="block p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Module 2: MIPS Introduction, ALU and Data Transfer</h3>
+                  <p className="text-gray-600 text-sm mb-4">MIPS registers, arithmetic operations, load/store instructions, memory addressing</p>
+                  <div className="mb-2">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-semibold text-gray-700">Best quiz score</span>
+                      <span className="text-gray-900 font-medium">{m2}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-[#800020] h-2 rounded-full transition-all" style={{ width: `${Math.min(100, m2)}%` }}></div>
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-[#800020] h-2 rounded-full" style={{ width: '100%' }}></div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-gray-700 text-sm">Latest attempt</span>
+                    <span className="bg-[#800020] text-white px-4 py-1 rounded-full text-sm font-semibold">
+                      {Math.round(progressMap["2"]?.last_score_pct ?? 0)}%
+                    </span>
                   </div>
+                </Link>
+                <div className="px-6 pb-4 flex flex-wrap gap-x-4 gap-y-1 text-sm border-t border-gray-100 pt-3">
+                  <Link href="/module/2/tutor" className="text-[#800020] font-medium hover:underline">AI Tutor</Link>
+                  <Link href="/module/2/mastery" className="text-[#800020] font-medium hover:underline">Mastery quiz</Link>
+                  <Link href="/module/2/sandbox" className="text-[#800020] font-medium hover:underline">Sandbox</Link>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-700 text-sm">Mastery Score</span>
-                  <span className="bg-[#800020] text-white px-4 py-1 rounded-full text-sm font-semibold">88%</span>
-                </div>
-              </Link>
+              </div>
 
               {/* Module 3 */}
-              <Link href="/module/3" className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Module 3: Branch Instructions and Machine Code</h3>
-                <p className="text-gray-600 text-sm mb-4">Conditional branching, jump instructions, encoding MIPS to machine code</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-700">Progress</span>
-                    <span className="text-gray-900 font-medium">50%</span>
+              <div className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-shadow overflow-hidden">
+                <Link href="/module/3" className="block p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Module 3: Branch Instructions and Machine Code</h3>
+                  <p className="text-gray-600 text-sm mb-4">Conditional branching, jump instructions, encoding MIPS to machine code</p>
+                  <div className="mb-2">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-semibold text-gray-700">Best quiz score</span>
+                      <span className="text-gray-900 font-medium">{m3}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-[#800020] h-2 rounded-full transition-all" style={{ width: `${Math.min(100, m3)}%` }}></div>
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-[#800020] h-2 rounded-full" style={{ width: '50%' }}></div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-gray-700 text-sm">Latest attempt</span>
+                    <span className="bg-[#800020] text-white px-4 py-1 rounded-full text-sm font-semibold">
+                      {Math.round(progressMap["3"]?.last_score_pct ?? 0)}%
+                    </span>
                   </div>
+                </Link>
+                <div className="px-6 pb-4 flex flex-wrap gap-x-4 gap-y-1 text-sm border-t border-gray-100 pt-3">
+                  <Link href="/module/3/tutor" className="text-[#800020] font-medium hover:underline">AI Tutor</Link>
+                  <Link href="/module/3/mastery" className="text-[#800020] font-medium hover:underline">Mastery quiz</Link>
+                  <Link href="/module/3/sandbox" className="text-[#800020] font-medium hover:underline">Sandbox</Link>
                 </div>
-              </Link>
+              </div>
 
               {/* Module 4 - Locked */}
               <div className="bg-gray-100 border border-gray-300 rounded-lg p-6 relative opacity-60 cursor-not-allowed">

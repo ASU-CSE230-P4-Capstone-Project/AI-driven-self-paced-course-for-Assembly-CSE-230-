@@ -2,15 +2,32 @@ import json
 import re
 import html
 import ast
+import os
 from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import APIRouter, HTTPException, status
 
 from app.models.request_models import CreateAIQueryRequest, QuizGenerationRequest
 from app.services.ai_service import CreateAIService, CreateAIServiceError
+from app.services import embedding_service, pinecone_service
 
 router = APIRouter(tags=["ai"])
 createai_service = CreateAIService()
+
+
+def _quiz_createai_service() -> CreateAIService:
+    """
+    Separate CreateAI client for mastery quizzes: optional lighter model via env,
+    no Pinecone path here. Keeps tutor (/query) on CREATEAI_MODEL_* while quizzes
+    can use CREATEAI_QUIZ_MODEL_* to reduce load on the primary model.
+    """
+    return CreateAIService(
+        timeout=90.0,
+        model_provider=os.getenv("CREATEAI_QUIZ_MODEL_PROVIDER")
+        or os.getenv("CREATEAI_MODEL_PROVIDER", "openai"),
+        model_name=os.getenv("CREATEAI_QUIZ_MODEL_NAME")
+        or os.getenv("CREATEAI_MODEL_NAME", "gpt4"),
+    )
 
 
 # -----------------------
@@ -128,19 +145,67 @@ def _replace_single_quotes_with_double(s: str) -> str:
     Replace JSON-like single-quoted strings with double-quoted strings.
     This handles mixed single/double quotes in JSON structures.
     """
-    # First, handle escaped single quotes inside single-quoted strings
-    def _repl(match: re.Match) -> str:
-        body = match.group(1)
-        # Unescape any escaped single quotes
-        body = body.replace("\\'", "'")
-        # Escape any existing double quotes and backslashes in the body
-        body_escaped = body.replace('\\', '\\\\').replace('"', '\\"')
-        return f'"{body_escaped}"'
+    # IMPORTANT: do not replace single quotes that appear inside an existing
+    # double-quoted JSON string. Those are valid apostrophes (e.g. "hint": "'add' ...").
+    out: list[str] = []
+    in_double = False
+    escape_next = False
+    i = 0
 
-    # Replace single-quoted strings: '(anything but unescaped single-quote)*'
-    # This regex matches single-quoted strings, handling escaped quotes inside
-    s = re.sub(r"'((?:\\.|[^'\\])*)'", _repl, s)
-    return s
+    while i < len(s):
+        ch = s[i]
+
+        if escape_next:
+            out.append(ch)
+            escape_next = False
+            i += 1
+            continue
+
+        if ch == "\\":
+            out.append(ch)
+            escape_next = True
+            i += 1
+            continue
+
+        if ch == '"' and not escape_next:
+            in_double = not in_double
+            out.append(ch)
+            i += 1
+            continue
+
+        # Only rewrite single-quoted segments when we're NOT inside a double-quoted string.
+        if not in_double and ch == "'":
+            j = i + 1
+            body_chars: list[str] = []
+            inner_escape = False
+            while j < len(s):
+                cj = s[j]
+                if inner_escape:
+                    body_chars.append(cj)
+                    inner_escape = False
+                    j += 1
+                    continue
+                if cj == "\\":
+                    inner_escape = True
+                    j += 1
+                    continue
+                if cj == "'":
+                    break
+                body_chars.append(cj)
+                j += 1
+
+            if j < len(s) and s[j] == "'":
+                body = "".join(body_chars)
+                # Escape for JSON double-quoted strings
+                body_escaped = body.replace("\\", "\\\\").replace('"', '\\"')
+                out.append(f'"{body_escaped}"')
+                i = j + 1
+                continue
+
+        out.append(ch)
+        i += 1
+
+    return "".join(out)
 
 
 def _remove_trailing_commas(s: str) -> str:
@@ -179,6 +244,51 @@ def forgiving_parse_json_like(text: str) -> Any:
     if not text or not isinstance(text, str):
         raise ValueError("Empty or invalid text for parsing")
 
+    def _repair_unescaped_newlines_in_strings_for_json(s: str) -> str:
+        """
+        Repair LLM outputs where a JSON string contains literal newlines.
+        JSON forbids unescaped newlines inside quotes; we replace those newlines
+        with spaces while inside quoted strings.
+        """
+        if not s:
+            return s
+
+        out_chars: list[str] = []
+        in_string = False
+        quote_char: str | None = None
+        escape_next = False
+
+        for ch in s:
+            if escape_next:
+                out_chars.append(ch)
+                escape_next = False
+                continue
+
+            if ch == "\\":
+                out_chars.append(ch)
+                escape_next = True
+                continue
+
+            if not in_string and ch in ('"', "'"):
+                in_string = True
+                quote_char = ch
+                out_chars.append(ch)
+                continue
+
+            if in_string and ch == quote_char:
+                in_string = False
+                quote_char = None
+                out_chars.append(ch)
+                continue
+
+            if in_string and (ch == "\n" or ch == "\r"):
+                out_chars.append(" ")
+                continue
+
+            out_chars.append(ch)
+
+        return "".join(out_chars)
+
     # 1) direct JSON
     parsed, err = _try_json_loads(text)
     if parsed is not None:
@@ -188,10 +298,12 @@ def forgiving_parse_json_like(text: str) -> Any:
     working = text.strip()
     working = html.unescape(working)
     working = _strip_code_fence(working)
+    working = _repair_unescaped_newlines_in_strings_for_json(working)
 
     # 2) extract first bracketed segment, attempt direct json.loads
     candidate = _extract_first_bracketed_segment(working)
     if candidate:
+        candidate = _repair_unescaped_newlines_in_strings_for_json(candidate)
         parsed, err = _try_json_loads(candidate)
         if parsed is not None:
             return parsed
@@ -233,6 +345,7 @@ def forgiving_parse_json_like(text: str) -> Any:
     regex_match = re.search(r'\[[\s\S]*?\]', working, re.DOTALL)
     if regex_match:
         candidate2 = regex_match.group(0)
+        candidate2 = _repair_unescaped_newlines_in_strings_for_json(candidate2)
         # try raw
         parsed, err = _try_json_loads(candidate2)
         if parsed is not None:
@@ -257,6 +370,7 @@ def forgiving_parse_json_like(text: str) -> Any:
             # Try to parse each object as a question
             parsed_questions = []
             for obj_str in objects:
+                obj_str = _repair_unescaped_newlines_in_strings_for_json(obj_str)
                 # Try with quote replacement
                 fixed_match = _replace_single_quotes_with_double(obj_str)
                 fixed_match = _remove_trailing_commas(fixed_match)
@@ -307,6 +421,9 @@ def _validate_questions_list(questions_raw: Any, expected_num: int) -> List[Dict
       "prompt": "Question",
       "choices": [ {"id":"A","text":"..","isCorrect": False}, ... 4 items],
       "hint": "..."
+      "topic": "optional concept name",
+      "subTopic": "optional sub concept name",
+      "source_citation": "optional source citation string"
     }
     Auto-fixes:
       - Enforces four choices (A-D) by filling placeholders if missing
@@ -372,11 +489,17 @@ def _validate_questions_list(questions_raw: Any, expected_num: int) -> List[Dict
         if len(final_choices) != 4:
             continue
 
+        topic = str(q.get("topic", "") or "").strip() or "General"
+        sub_topic = str(q.get("subTopic", "") or q.get("sub_topic", "") or "").strip()
+        src_cit = str(q.get("source_citation", "") or "").strip()
         validated.append({
             "id": qid,
             "prompt": prompt,
             "choices": final_choices,
-            "hint": str(hint)
+            "hint": str(hint),
+            "topic": topic,
+            "subTopic": sub_topic,
+            "source_citation": src_cit,
         })
 
     if not validated:
@@ -424,19 +547,134 @@ def extract_and_validate_questions_from_ai_result(result: Any, expected_num: int
 # API endpoints
 # -----------------------
 
+def _extract_module_id(text: str | None) -> str | None:
+    if not text:
+        return None
+    match = re.search(r"\bmodule\s*([0-9]+)\b", text, flags=re.IGNORECASE)
+    return match.group(1) if match else None
+
+
+def _format_retrieval_context(
+    matches: list[dict[str, Any]],
+    max_chars_per_chunk: int = 500,
+    max_total_chars: int = 2200,
+) -> str:
+    lines = ["Retrieved knowledge-base context:"]
+    consumed = 0
+    for i, m in enumerate(matches, start=1):
+        metadata = m.get("metadata") or {}
+        source = metadata.get("source_file") or metadata.get("doc_id") or "unknown"
+        score = m.get("score")
+        chunk = (metadata.get("text") or "").strip()
+        if not chunk:
+            continue
+        if len(chunk) > max_chars_per_chunk:
+            chunk = chunk[:max_chars_per_chunk].rstrip() + " ..."
+        header = f"[{i}] source={source} score={score}"
+        addition = f"{header}\n\n{chunk}\n\n"
+        if consumed + len(addition) > max_total_chars:
+            break
+        lines.append(header)
+        lines.append(chunk)
+        consumed += len(addition)
+    return "\n\n".join(lines)
+
+
+def _prompt_too_similar_to_any(prompt: str, needles: List[str]) -> bool:
+    """Cheap de-duplication for regenerated quizzes."""
+    p = "".join((prompt or "").lower().split())
+    if len(p) < 15:
+        return False
+    for n in needles:
+        o = "".join((n or "").lower().split())
+        if not o:
+            continue
+        if p == o:
+            return True
+        shorter, longer = (p, o) if len(p) < len(o) else (o, p)
+        if len(shorter) >= 48 and shorter in longer:
+            return True
+    return False
+
+
+async def _retrieve_quiz_kb_context(module_id: str) -> tuple[str | None, list[dict[str, Any]]]:
+    """Ground quiz generation in the same Pinecone chunks as the tutor (course PDFs)."""
+    return await _retrieve_pinecone_context(
+        f"CSE 230 Module {module_id} assembly MIPS concepts and learning objectives",
+        f"module {module_id}",
+    )
+
+
+async def _retrieve_pinecone_context(prompt: str, context: str | None) -> tuple[str | None, list[dict[str, Any]]]:
+    if not pinecone_service.is_configured() or not embedding_service.is_configured():
+        return None, []
+
+    namespace = (os.getenv("PINECONE_NAMESPACE", "cse230") or "cse230").strip()
+    try:
+        top_k = int(os.getenv("PINECONE_TOP_K", "3"))
+    except ValueError:
+        top_k = 3
+    top_k = max(1, min(top_k, 5))
+
+    query_text = prompt if not context else f"{prompt}\n\nContext:\n{context}"
+    vector = await embedding_service.embed_text(query_text)
+
+    module_id = _extract_module_id(context) or _extract_module_id(prompt)
+    matches: list[dict[str, Any]] = []
+    if module_id:
+        matches = await pinecone_service.query_vectors(
+            vector=vector,
+            top_k=top_k,
+            namespace=namespace,
+            filter_={"module_id": module_id},
+            include_metadata=True,
+            include_values=False,
+        )
+
+    if not matches:
+        matches = await pinecone_service.query_vectors(
+            vector=vector,
+            top_k=top_k,
+            namespace=namespace,
+            filter_=None,
+            include_metadata=True,
+            include_values=False,
+        )
+
+    if not matches:
+        return None, []
+
+    retrieval_context = _format_retrieval_context(matches)
+    return retrieval_context, matches
+
 @router.post("/query")
 async def query_createai(request: CreateAIQueryRequest):
+    pinecone_context = None
+    pinecone_matches: list[dict[str, Any]] = []
+    try:
+        pinecone_context, pinecone_matches = await _retrieve_pinecone_context(request.prompt, request.context)
+    except Exception:
+        # Keep tutor available even if retrieval has transient issues.
+        pinecone_context, pinecone_matches = None, []
+
+    merged_context = request.context or ""
+    if pinecone_context:
+        merged_context = f"{merged_context}\n\n{pinecone_context}".strip()
+
+    # Avoid token blowups by using either Pinecone grounding OR CreateAI hosted search, not both.
+    effective_enable_search = request.enable_search if not pinecone_context else False
+
     try:
         result = await createai_service.query(
             prompt=request.prompt,
-            context=request.context,
+            context=merged_context or None,
             system_prompt=request.system_prompt,
             session_id=request.session_id,
             temperature=request.temperature,
             top_p=request.top_p,
             top_k=request.top_k,
             endpoint=request.endpoint,
-            enable_search=request.enable_search,
+            enable_search=effective_enable_search,
             search_params=request.search_params,
             extra_input=request.extra_input,
             extra_model_params=request.extra_model_params,
@@ -445,130 +683,217 @@ async def query_createai(request: CreateAIQueryRequest):
         status_code = exc.status_code or status.HTTP_502_BAD_GATEWAY
         raise HTTPException(status_code=status_code, detail=str(exc)) from exc
 
+    if isinstance(result, dict):
+        metadata = result.setdefault("metadata", {})
+        metadata["sources"] = pinecone_matches
+        metadata["retrieval_enabled"] = bool(pinecone_context)
+
     return {"result": result}
+
+
+def _quiz_sources_from_matches(matches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for m in matches:
+        md = m.get("metadata") or {}
+        text = (md.get("text") or "").strip()
+        out.append(
+            {
+                "source_file": md.get("source_file") or md.get("doc_id") or "unknown",
+                "snippet": text[:500] + ("…" if len(text) > 500 else ""),
+                "score": m.get("score"),
+            }
+        )
+    return out
+
+
+def _normalize_createai_sources(sources_payload: Any) -> list[dict[str, Any]]:
+    """
+    Normalize CreateAI "sources" metadata into the quiz UI shape:
+      { source_file, snippet, score }
+    """
+    if not sources_payload:
+        return []
+
+    src_list: list[Any] = []
+    if isinstance(sources_payload, dict):
+        # Some responses look like { "sources": [ ... ] }
+        if isinstance(sources_payload.get("sources"), list):
+            src_list = sources_payload["sources"]
+    elif isinstance(sources_payload, list):
+        src_list = sources_payload
+
+    out: list[dict[str, Any]] = []
+    for s in src_list:
+        if not isinstance(s, dict):
+            continue
+        md = s.get("metadata") or {}
+        text = (md.get("text") or md.get("snippet") or "").strip()
+        out.append(
+            {
+                "source_file": md.get("source_file") or md.get("doc_id") or md.get("title") or "Knowledge Base",
+                "snippet": text[:500] + ("…" if len(text) > 500 else ""),
+                "score": s.get("score") or md.get("score"),
+            }
+        )
+    return out
 
 
 @router.post("/quiz")
 async def generate_quiz(request: QuizGenerationRequest):
     """
-    Generate quiz questions for a specific module using the CreateAI API.
-    Always generates exactly 10 questions.
-    Returns questions in the format expected by the frontend.
+    Ground quizzes in course KB: Pinecone chunks for the module when configured; otherwise
+    CreateAI hosted knowledge base (enable_search). Excludes prior stems on regenerate.
+    Tutor chat remains POST /fetch/query.
     """
     all_questions: List[Dict[str, Any]] = []
-    questions_needed = 10  # Always generate 10 questions
-    max_attempts = 5  # Maximum number of API calls to make
+    # Ensure minimum coverage for mastery: 5+ questions per mastery quiz.
+    questions_needed = min(max(request.num_questions, 5), 50)
+    max_attempts = max(5, (questions_needed + 9) // 10)
     attempt = 0
-    
+    pinecone_matches: list[dict[str, Any]] = []
+    createai_source_rows: list[dict[str, Any]] = []
+
+    exclude_list = [p.strip() for p in (request.exclude_question_prompts or []) if p and str(p).strip()]
+    prompt_memory: List[str] = list(exclude_list)
+
     try:
-        # Use a longer timeout for quiz generation (90 seconds)
-        quiz_service = CreateAIService(timeout=90.0)
+        pinecone_context, pinecone_matches = await _retrieve_quiz_kb_context(request.module_id)
+    except Exception:
+        pinecone_context, pinecone_matches = None, []
+
+    project_id = (os.getenv("CREATEAI_PROJECT_ID") or "").strip()
+    # Avoid model context overflows: keep quiz generation on the smaller Pinecone path when available.
+    # Hosted CreateAI search is opt-in.
+    quiz_enable_search = str(os.getenv("QUIZ_ENABLE_SEARCH", "false")).strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "y",
+        "on",
+    )
+    # Same rule as tutor: avoid double retrieval — Pinecone OR CreateAI search, not both.
+    effective_enable_search = quiz_enable_search and bool(project_id) and not bool(pinecone_context)
+
+    # Important: keep the CreateAI input under model context limits.
+    # exclude_question_prompts can grow on regeneration; sending all of it
+    # can easily overflow the model context.
+    exclude_block = ""
+    if exclude_list:
+        max_exclude_items = 12
+        max_exclude_chars = 180
+        lines = ["Previously generated question stems — do NOT repeat or closely paraphrase:"]
+        for x in exclude_list[-max_exclude_items:]:
+            lines.append(f"- {x[:max_exclude_chars]}")
+        exclude_block = "\n".join(lines)
+
+    base_ctx = f"CSE 230 Module {request.module_id} (Assembly / MIPS)."
+    if pinecone_context:
+        merged_context = f"{base_ctx}\n\n{pinecone_context}\n\n{exclude_block}".strip()
+    else:
+        merged_context = f"{base_ctx}\n\n{exclude_block}".strip()
+
+    # Hard cap to avoid "input tokens exceeded context length" from CreateAI.
+    MAX_MERGED_CONTEXT_CHARS = 4500
+    if len(merged_context) > MAX_MERGED_CONTEXT_CHARS:
+        merged_context = merged_context[:MAX_MERGED_CONTEXT_CHARS].rstrip()
+
+    quiz_topics_by_module: dict[str, list[str]] = {
+        "1": [
+            "Computer Abstraction and Technology",
+            "Performance Metrics (CPI, Clock Rate)",
+            "Instruction Set Principles",
+            "MIPS Architecture Basics",
+        ],
+        "2": [
+            "MIPS Register File and Conventions",
+            "Arithmetic and Logical Operations",
+            "Load and Store Instructions",
+            "Memory Addressing Modes",
+        ],
+        "3": [
+            "Conditional Branch Instructions",
+            "Jump and Jump Register",
+            "MIPS Instruction Encoding",
+            "Machine Code Format",
+        ],
+    }
+    allowed_topics = quiz_topics_by_module.get(str(request.module_id), ["General"])
+    allowed_topics_str = ", ".join(allowed_topics)
+
+    sys_prompt = (
+        "You are an assessment author for CSE 230. "
+        "Generate ONLY a JSON array of multiple-choice questions. "
+        "Each question must be answerable from the provided context. "
+        "Include fields: id, prompt, choices(A-D one correct), hint, topic, source_citation."
+    )
+
+    try:
+        quiz_service = _quiz_createai_service()
 
         while len(all_questions) < questions_needed and attempt < max_attempts:
             attempt += 1
             remaining = questions_needed - len(all_questions)
-            
-            # Adjust prompt based on how many questions we still need
+
             if attempt == 1:
-                quiz_prompt = f"""Generate 10 multiple-choice quiz questions for Module {request.module_id} of CSE 230 Assembly Language Programming.
-
-IMPORTANT: You MUST generate exactly 10 questions. Do not stop early. Generate ALL 10 questions.
-
-Each question should:
-1. Test understanding of Assembly language concepts specific to Module {request.module_id}
-2. Have exactly 4 answer choices (A, B, C, D)
-3. Have exactly one correct answer
-4. Include a brief hint that guides students toward the correct answer
-
-Return the response as a valid JSON array with this exact structure:
-[
-  {{
-    "id": "1",
-    "prompt": "Question text here?",
-    "choices": [
-      {{"id": "A", "text": "Choice A text", "isCorrect": false}},
-      {{"id": "B", "text": "Choice B text", "isCorrect": true}},
-      {{"id": "C", "text": "Choice C text", "isCorrect": false}},
-      {{"id": "D", "text": "Choice D text", "isCorrect": false}}
-    ],
-    "hint": "Helpful hint text"
-  }}
-]
-
-Make sure the questions are relevant to Module {request.module_id} content and progressively test different aspects of the material.
-Remember: Generate ALL 10 questions in your response."""
+                quiz_prompt = (
+                    f"Generate exactly {remaining} multiple-choice quiz questions for Module {request.module_id}. "
+                    "Return a JSON array only. "
+                    "For each question include: id, prompt, 4 choices (A-D; exactly one correct via isCorrect), hint, topic, source_citation. "
+                    f"topic MUST be one of: {allowed_topics_str}."
+                )
             else:
-                # For follow-up requests, ask for the remaining questions
-                existing_ids = {q.get("id") for q in all_questions}
-                quiz_prompt = f"""Generate {remaining} additional multiple-choice quiz questions for Module {request.module_id} of CSE 230 Assembly Language Programming.
-
-IMPORTANT: Generate exactly {remaining} NEW questions. Do not repeat questions. Generate questions with IDs starting from {len(all_questions) + 1}.
-
-Each question should:
-1. Test understanding of Assembly language concepts specific to Module {request.module_id}
-2. Have exactly 4 answer choices (A, B, C, D)
-3. Have exactly one correct answer
-4. Include a brief hint that guides students toward the correct answer
-
-Return the response as a valid JSON array with this exact structure:
-[
-  {{
-    "id": "{len(all_questions) + 1}",
-    "prompt": "Question text here?",
-    "choices": [
-      {{"id": "A", "text": "Choice A text", "isCorrect": false}},
-      {{"id": "B", "text": "Choice B text", "isCorrect": true}},
-      {{"id": "C", "text": "Choice C text", "isCorrect": false}},
-      {{"id": "D", "text": "Choice D text", "isCorrect": false}}
-    ],
-    "hint": "Helpful hint text"
-  }}
-]
-
-Generate exactly {remaining} questions. Do not stop early."""
+                quiz_prompt = (
+                    f"Generate {remaining} additional NEW questions for Module {request.module_id} (no repeated prompts). "
+                    "Return a JSON array only with the same schema. "
+                    f"topic MUST be one of: {allowed_topics_str}. "
+                    f"Start ids from {len(all_questions) + 1}."
+                )
 
             result = await quiz_service.query(
                 prompt=quiz_prompt,
-                context=f"Module {request.module_id}",
-                system_prompt="Generate multiple-choice quiz questions for the given module. Always generate the exact number of questions requested.",
-                enable_search=True,
-                temperature=0.7,
+                context=merged_context or None,
+                system_prompt=sys_prompt,
+                enable_search=effective_enable_search,
+                temperature=0.45,
             )
 
-            # Use the robust helper to extract and validate questions
             try:
+                if not pinecone_matches and not createai_source_rows and isinstance(result, dict):
+                    md = result.get("metadata") or {}
+                    # CreateAI often returns something like md["sources"] or md["retrieval"]["sources"]
+                    createai_source_rows = _normalize_createai_sources(
+                        md.get("sources") or md.get("retrieval_sources") or md.get("retrieval", {}).get("sources")
+                    )
                 new_questions = extract_and_validate_questions_from_ai_result(result, expected_num=remaining)
-                
-                # Avoid duplicates by checking IDs
-                existing_ids = {q.get("id") for q in all_questions}
                 for q in new_questions:
-                    if q.get("id") not in existing_ids:
-                        all_questions.append(q)
-                        existing_ids.add(q.get("id"))
-                
-                # If we got no new questions, break to avoid infinite loop
+                    pr = str(q.get("prompt", "")).strip()
+                    if not pr:
+                        continue
+                    if _prompt_too_similar_to_any(pr, prompt_memory):
+                        continue
+                    if _prompt_too_similar_to_any(pr, [str(x.get("prompt", "")) for x in all_questions]):
+                        continue
+                    all_questions.append(q)
+                    prompt_memory.append(pr)
                 if not new_questions:
                     break
-                    
             except ValueError as ve:
-                # If parsing fails and we have some questions, return what we have
                 if all_questions:
                     break
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=f"Could not parse quiz questions from AI response: {str(ve)}"
-                )
+                ) from ve
 
-        # Ensure we have exactly 10 questions
-        final_questions = all_questions[:10]
-        
-        # Re-number questions to be sequential
+        final_questions = all_questions[:questions_needed]
+
         for i, q in enumerate(final_questions, start=1):
             q["id"] = str(i)
 
         return {
             "moduleId": request.module_id,
-            "questions": final_questions
+            "questions": final_questions,
+            "sources": _quiz_sources_from_matches(pinecone_matches) if pinecone_matches else createai_source_rows,
         }
 
     except CreateAIServiceError as exc:

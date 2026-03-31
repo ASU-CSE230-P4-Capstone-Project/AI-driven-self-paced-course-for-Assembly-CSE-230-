@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.models import domain_models
 from app.services.db import engine
-from app.api import auth, fetch
+from app.api import auth, fetch, pinecone, progress
     #, webhooks, ai, analytics, pushback, health
 
 app = FastAPI(title="Canvas AI Tutor")
@@ -38,6 +38,8 @@ domain_models.Base.metadata.create_all(bind=engine)
 # app.include_router(health.router, prefix="/")
 app.include_router(auth.router, prefix="/auth")
 app.include_router(fetch.router, prefix="/fetch")
+app.include_router(progress.router, prefix="/progress")
+app.include_router(pinecone.router)
 # app.include_router(webhooks.router, prefix="/webhooks")
 # app.include_router(ai.router, prefix="/ai")
 # app.include_router(analytics.router, prefix="/analytics")

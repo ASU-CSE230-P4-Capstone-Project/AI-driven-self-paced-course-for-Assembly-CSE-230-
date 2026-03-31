@@ -1,5 +1,6 @@
 //PROF VIEW COMPONENT
 
+import { Question } from '../types/quiz';
 import { ModuleAnalytics } from '../types/teacher';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -11,27 +12,33 @@ interface TeacherModuleSelectorProps {
   modules: ModuleAnalytics[];
   totalStudents: number;
   onSelectModule: (moduleName: string) => void;
-  onCreateMasteryTest: (questions: any[], moduleName: string) => void;
+  onCreateMasteryTest: (questions: Question[], moduleName: string) => void;
 }
 
 export function TeacherModuleSelector({ modules, totalStudents, onSelectModule, onCreateMasteryTest }: TeacherModuleSelectorProps) {
   // Calculate overall statistics
   const totalCompleted = modules.reduce((sum, m) => sum + m.completedStudents, 0);
-  const avgCompletionRate = Math.round(modules.reduce((sum, m) => sum + m.completionRate, 0) / modules.length);
-  const avgScore = Math.round(modules.reduce((sum, m) => sum + m.averageScore, 0) / modules.length);
+  const avgCompletionRate = modules.length
+    ? Math.round(modules.reduce((sum, m) => sum + m.completionRate, 0) / modules.length)
+    : 0;
+  const avgScore = modules.length
+    ? Math.round(modules.reduce((sum, m) => sum + m.averageScore, 0) / modules.length)
+    : 0;
   const highPerformingModules = modules.filter(m => m.averageScore >= 70).length;
 
   return (
     <div className="space-y-6">
       <div className="border-l-4 border-yellow-600 pl-4">
-        <h1 className="text-red-900">Professor Analytics Dashboard</h1>
-        <p className="text-gray-600">Arizona State University - CSE 230: Computer Org/Assemb Lang Prog</p>
+        <h1 className="text-[#800020]">Professor Analytics Dashboard</h1>
+        <p className="text-gray-600">
+          Arizona State University - CSE 230: Computer Org / Assemb Lang Prog
+        </p>
       </div>
 
       {/* Overall Statistics */}
       <Card className="border-2 border-yellow-600 bg-amber-50/30 shadow-sm">
         <CardHeader className="border-b border-yellow-600/20">
-          <CardTitle className="text-red-900">
+          <CardTitle className="text-[#800020]">
             Class Performance Overview
           </CardTitle>
         </CardHeader>
@@ -39,7 +46,7 @@ export function TeacherModuleSelector({ modules, totalStudents, onSelectModule, 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white rounded-lg p-4 border-2 border-red-900/30 shadow-sm">
-              <div className="text-2xl text-red-900">{totalStudents}</div>
+              <div className="text-2xl text-[#800020]">{totalStudents}</div>
               <div className="text-sm text-gray-600">Total Students</div>
             </div>
             <div className="bg-white rounded-lg p-4 border-2 border-yellow-600/30 shadow-sm">
@@ -81,7 +88,7 @@ export function TeacherModuleSelector({ modules, totalStudents, onSelectModule, 
               }`}
             >
               <CardHeader>
-                <CardTitle className="text-red-900">
+                  <CardTitle className="text-[#800020]">
                   {module.moduleName}
                 </CardTitle>
               </CardHeader>
@@ -126,7 +133,7 @@ export function TeacherModuleSelector({ modules, totalStudents, onSelectModule, 
                   className="w-full"
                   variant="default"
                 >
-                  View Question Analytics
+                  View Students
                 </Button>
               </CardContent>
             </Card>
