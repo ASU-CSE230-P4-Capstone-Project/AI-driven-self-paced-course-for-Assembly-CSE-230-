@@ -1,7 +1,9 @@
 import os
+import time
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import OperationalError
 
 from app.models import domain_models
 from app.services.db import engine
@@ -33,7 +35,29 @@ app.add_middleware(
     allow_credentials=allow_credentials,
 )
 
-domain_models.Base.metadata.create_all(bind=engine)
+@app.on_event("startup")
+def _init_db_with_retry() -> None:
+    """
+    Docker Compose often starts the backend before Postgres is ready to accept
+    connections. If we run create_all() at import time, the process crashes and
+    the frontend sees "Failed to fetch". Retry briefly on startup instead.
+    """
+
+    max_wait_s = int(os.getenv("DB_INIT_MAX_WAIT_SECONDS", "45"))
+    deadline = time.time() + max_wait_s
+    attempt = 0
+
+    while True:
+        attempt += 1
+        try:
+            domain_models.Base.metadata.create_all(bind=engine)
+            return
+        except OperationalError:
+            if time.time() >= deadline:
+                raise
+            # capped backoff: 0.5s, 1s, 2s, 3s, 3s, ...
+            sleep_s = min(3.0, 0.5 * (2 ** max(0, attempt - 1)))
+            time.sleep(sleep_s)
 
 # app.include_router(health.router, prefix="/")
 app.include_router(auth.router, prefix="/auth")
