@@ -25,6 +25,37 @@ type ChatMessage = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+function escapeHtml(text: string) {
+  return text.replace(/[&<>"']/g, (c) => {
+    switch (c) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      case "'":
+        return "&#039;";
+      default:
+        return c;
+    }
+  });
+}
+
+// Minimal markdown rendering for the tutor output:
+// - `**bold**`
+// - `` `inline code` ``
+// - Preserve newlines
+function renderTutorMarkdownToHtml(text: string) {
+  const escaped = escapeHtml(text || "");
+  const withBold = escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  const withCode = withBold.replace(/`([^`]+)`/g, "<code>$1</code>");
+  const withEm = withCode.replace(/\*(.+?)\*/g, "<em>$1</em>");
+  return withEm.replace(/\n/g, "<br/>");
+}
+
 export default function TutorClient({ moduleId }: { moduleId: string }) {
   const { token } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -117,7 +148,13 @@ export default function TutorClient({ moduleId }: { moduleId: string }) {
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {message.role === "user" ? "You" : "Tutor"}
                 </p>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                <div
+                  className="text-sm leading-relaxed whitespace-pre-wrap"
+                  // Tutor content may include markdown (e.g. **bold**). We only render a small subset.
+                  dangerouslySetInnerHTML={{
+                    __html: renderTutorMarkdownToHtml(message.content),
+                  }}
+                />
                 {message.sources && message.sources.length > 0 && (
                   <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600">
                     <p className="mb-1 font-semibold text-slate-700">Sources used</p>

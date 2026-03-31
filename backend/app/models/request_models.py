@@ -38,7 +38,24 @@ class CreateAIQueryRequest(BaseModel):
 
 class QuizGenerationRequest(BaseModel):
     module_id: str
-    num_questions: int = Field(ge=1, le=20, default=10)
+    num_questions: int = Field(ge=1, le=50, default=10)
+    exclude_question_prompts: list[str] = Field(
+        default_factory=list,
+        description="Previous question stems to avoid duplicating on regenerate.",
+    )
+
+
+class TopicResult(BaseModel):
+    topic: str
+    correct: int = Field(ge=0)
+    total: int = Field(ge=1)
+
+
+class QuizResultRequest(BaseModel):
+    module_id: str
+    score: int = Field(ge=0)
+    total_questions: int = Field(ge=1)
+    topic_results: list[TopicResult] = Field(default_factory=list)
 
 
 class PineconeIngestRequest(BaseModel):

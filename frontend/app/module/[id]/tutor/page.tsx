@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import ModuleHeader from "../ModuleHeader";
+import ModuleTabs from "../ModuleTabs";
 import TutorClient from "./TutorClient";
 
 export async function generateStaticParams() {
@@ -13,15 +15,19 @@ export default async function TutorPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="min-h-screen bg-white">
+      <ModuleHeader moduleId={id} />
+
       <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+        <ModuleTabs moduleId={id} activeTab="tutor" />
+
         <Link
-          href={`/module/${id}`}
+          href="/dashboard"
           className="inline-flex items-center gap-2 text-gray-600 hover:text-black transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to Module
+          Back to Dashboard
         </Link>
 
         <div className="space-y-2">
@@ -38,4 +44,3 @@ export default async function TutorPage({ params }: { params: Promise<{ id: stri
     </div>
   );
 }
-
