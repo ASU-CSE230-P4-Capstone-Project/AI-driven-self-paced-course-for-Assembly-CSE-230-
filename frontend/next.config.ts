@@ -1,14 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  output: 'export',
+  reactStrictMode: true,
+  turbopack: {
+    root: __dirname,
+  },
   images: {
     unoptimized: true,
   },
-  outputFileTracingIncludes: {
-    "app/module/[id]/mastery/page": ["../db/init/questions/**/*"],
-  }
 };
 
 export default nextConfig;
