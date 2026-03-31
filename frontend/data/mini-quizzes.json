@@ -1,0 +1,140 @@
+{
+  "1": {
+    "title": "Computer Abstractions & Performance",
+    "sections": [
+      {
+        "id": "intro",
+        "title": "Computer Abstractions Overview",
+        "order": 1,
+        "contentPlaceholder": "Introduction to computer architecture layers and abstraction concepts.",
+        "miniQuiz": {
+          "id": "m1-s1-q1",
+          "position": "after",
+          "questions": [
+            {
+              "id": "1",
+              "prompt": "What is the primary purpose of abstraction in computer architecture?",
+              "choices": [
+                { "id": "A", "text": "To make hardware cheaper", "isCorrect": false },
+                { "id": "B", "text": "To hide complexity and provide simpler interfaces at each level", "isCorrect": true },
+                { "id": "C", "text": "To increase clock speed", "isCorrect": false },
+                { "id": "D", "text": "To reduce power consumption", "isCorrect": false }
+              ]
+            },
+            {
+              "id": "2",
+              "prompt": "Which of the following is NOT a level of abstraction in computer architecture?",
+              "choices": [
+                { "id": "A", "text": "Hardware level", "isCorrect": false },
+                { "id": "B", "text": "Machine language level", "isCorrect": false },
+                { "id": "C", "text": "Operating system level", "isCorrect": false },
+                { "id": "D", "text": "Internet protocol level", "isCorrect": true }
+              ]
+            },
+            {
+              "id": "3",
+              "prompt": "Moore's Law states that:",
+              "choices": [
+                { "id": "A", "text": "The number of transistors on a chip doubles approximately every 18-24 months", "isCorrect": true },
+                { "id": "B", "text": "CPU clock speed doubles every year", "isCorrect": false },
+                { "id": "C", "text": "Memory capacity increases linearly", "isCorrect": false },
+                { "id": "D", "text": "Power consumption decreases exponentially", "isCorrect": false }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "performance",
+        "title": "Performance Metrics",
+        "order": 2,
+        "contentPlaceholder": "Understanding CPU time, clock cycles, and instructions per cycle.",
+        "miniQuiz": {
+          "id": "m1-s2-q1",
+          "position": "after",
+          "questions": [
+            {
+              "id": "1",
+              "prompt": "CPU time can be calculated as:",
+              "choices": [
+                { "id": "A", "text": "Clock Rate × CPI", "isCorrect": false },
+                { "id": "B", "text": "(Instruction Count × CPI) / Clock Rate", "isCorrect": true },
+                { "id": "C", "text": "Instruction Count / Clock Rate", "isCorrect": false },
+                { "id": "D", "text": "CPI × Clock Rate / Instruction Count", "isCorrect": false }
+              ]
+            },
+            {
+              "id": "2",
+              "prompt": "CPI (Cycles Per Instruction) is defined as:",
+              "choices": [
+                { "id": "A", "text": "Clock cycles required per instruction on average", "isCorrect": true },
+                { "id": "B", "text": "Number of instructions executed per second", "isCorrect": false },
+                { "id": "C", "text": "The clock frequency of the CPU", "isCorrect": false },
+                { "id": "D", "text": "Total instruction count in a program", "isCorrect": false }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "speedup",
+        "title": "Performance Analysis & Speedup",
+        "order": 3,
+        "contentPlaceholder": "Amdahl's law and calculating speedup from optimizations.",
+        "miniQuiz": {
+          "id": "m1-s3-q1",
+          "position": "after",
+          "questions": [
+            {
+              "id": "1",
+              "prompt": "If a program spends 40% of its time in a function that you speed up by 3×, the overall speedup is approximately:",
+              "choices": [
+                { "id": "A", "text": "3.0×", "isCorrect": false },
+                { "id": "B", "text": "1.36×", "isCorrect": true },
+                { "id": "C", "text": "2.5×", "isCorrect": false },
+                { "id": "D", "text": "1.8×", "isCorrect": false }
+              ]
+            },
+            {
+              "id": "2",
+              "prompt": "Amdahl's Law helps us understand which of the following?",
+              "choices": [
+                { "id": "A", "text": "How to manufacture chips more efficiently", "isCorrect": false },
+                { "id": "B", "text": "The maximum speedup possible from parallelization", "isCorrect": true },
+                { "id": "C", "text": "How to reduce power consumption", "isCorrect": false },
+                { "id": "D", "text": "How transistors are arranged on a chip", "isCorrect": false }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "2": {
+    "title": "MIPS Introduction, ALU and Data Transfer",
+    "sections": [
+      {
+        "id": "mips-basics",
+        "title": "MIPS Basics",
+        "order": 1,
+        "contentPlaceholder": "Introduction to MIPS instruction set architecture.",
+        "miniQuiz": {
+          "id": "m2-s1-q1",
+          "position": "after",
+          "questions": [
+            {
+              "id": "1",
+              "prompt": "MIPS stands for:",
+              "choices": [
+                { "id": "A", "text": "Million Instructions Per Second", "isCorrect": true },
+                { "id": "B", "text": "Multi-core Integrated Processor System", "isCorrect": false },
+                { "id": "C", "text": "Memory Integrated Processing Structure", "isCorrect": false },
+                { "id": "D", "text": "Micro Instruction Pipeline Standard", "isCorrect": false }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

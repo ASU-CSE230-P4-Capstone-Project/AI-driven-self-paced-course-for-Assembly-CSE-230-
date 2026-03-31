@@ -581,3 +581,81 @@ Generate exactly {remaining} questions. Do not stop early."""
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error generating quiz: {str(exc)}"
         ) from exc
+
+
+@router.get("/mini-quiz")
+async def get_mini_quiz(module_id: str, section_id: str):
+    """
+    Get mini-quiz questions for a specific module and section.
+    Loads from the frontend's mini-quizzes.json file.
+    
+    Args:
+        module_id: The module ID (e.g., "1", "2")
+        section_id: The section ID (e.g., "intro", "performance")
+    
+    Returns:
+        Quiz data with questions and metadata
+    """
+    try:
+        import os
+        from pathlib import Path
+        
+        # Load the mini-quizzes.json file from the frontend
+        json_path = Path(__file__).parent.parent.parent.parent / "frontend" / "data" / "mini-quizzes.json"
+        
+        if not json_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Mini-quizzes data file not found at {json_path}"
+            )
+        
+        with open(json_path, 'r', encoding='utf-8') as f:
+            mini_quizzes_data = json.load(f)
+        
+        # Navigate to the requested module and section
+        if module_id not in mini_quizzes_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Module {module_id} not found"
+            )
+        
+        module_data = mini_quizzes_data[module_id]
+        sections = module_data.get("sections", [])
+        
+        section_data = None
+        for section in sections:
+            if section.get("id") == section_id:
+                section_data = section
+                break
+        
+        if not section_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Section {section_id} not found in Module {module_id}"
+            )
+        
+        # Extract quiz data
+        mini_quiz = section_data.get("miniQuiz", {})
+        questions = mini_quiz.get("questions", [])
+        
+        if not questions:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No quiz questions found for Module {module_id}, Section {section_id}"
+            )
+        
+        return {
+            "moduleId": module_id,
+            "sectionId": section_id,
+            "sectionTitle": section_data.get("title", ""),
+            "quizId": mini_quiz.get("id", ""),
+            "questions": questions
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching mini-quiz: {str(exc)}"
+        ) from exc
