@@ -41,7 +41,7 @@
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.553.0",
-    "next": "16.0.0",
+    "next": "^16.2.1",
     "next-themes": "^0.4.6",
     "react": "19.2.0",
     "react-day-picker": "^9.11.1",
@@ -59,18 +59,18 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.0.0",
+    "eslint-config-next": "^16.2.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
   "optionalDependencies": {
-    "lightningcss-linux-x64-gnu": "1.30.2",
-    "lightningcss-linux-x64-musl": "1.30.2",
-    "lightningcss-linux-arm64-gnu": "1.30.2",
-    "lightningcss-linux-arm64-musl": "1.30.2",
+    "@tailwindcss/oxide-linux-arm64-gnu": "4.1.15",
+    "@tailwindcss/oxide-linux-arm64-musl": "4.1.15",
     "@tailwindcss/oxide-linux-x64-gnu": "4.1.15",
     "@tailwindcss/oxide-linux-x64-musl": "4.1.15",
-    "@tailwindcss/oxide-linux-arm64-gnu": "4.1.15",
-    "@tailwindcss/oxide-linux-arm64-musl": "4.1.15"
+    "lightningcss-linux-arm64-gnu": "1.30.2",
+    "lightningcss-linux-arm64-musl": "1.30.2",
+    "lightningcss-linux-x64-gnu": "1.30.2",
+    "lightningcss-linux-x64-musl": "1.30.2"
   }
 }
