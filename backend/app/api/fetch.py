@@ -488,6 +488,9 @@ def _validate_questions_list(questions_raw: Any, expected_num: int) -> List[Dict
             continue
         if len(final_choices) != 4:
             continue
+        # Reject empty option text (LLM sometimes returns "" for options)
+        if any(not str(c.get("text", "")).strip() for c in final_choices):
+            continue
 
         topic = str(q.get("topic", "") or "").strip() or "General"
         sub_topic = str(q.get("subTopic", "") or q.get("sub_topic", "") or "").strip()
@@ -824,7 +827,8 @@ async def generate_quiz(request: QuizGenerationRequest):
         "You are an assessment author for CSE 230. "
         "Generate ONLY a JSON array of multiple-choice questions. "
         "Each question must be answerable from the provided context. "
-        "Include fields: id, prompt, choices(A-D one correct), hint, topic, source_citation."
+        "Include fields: id, prompt, choices(A-D one correct), hint, topic, source_citation. "
+        "Every choice text MUST be non-empty, distinct, and plausible (no empty strings)."
     )
 
     try:
