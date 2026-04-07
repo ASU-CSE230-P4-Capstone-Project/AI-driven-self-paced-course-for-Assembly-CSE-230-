@@ -28,6 +28,16 @@ export function TeacherDashboard() {
   const [totalStudents, setTotalStudents] = useState(0);
   const [students, setStudents] = useState<TeacherStudentRow[]>([]);
 
+  //Professor Can toggle through different dashboards for diff courses 
+  const [selectedCourse, setSelectedCourse] = useState("cs-mips");
+
+  const courses = [
+    { id: "cs-mips", label: "CS MIPS" },
+    { id: "cs-riscv", label: "CS RISC-V" },
+    { id: "cyb-x86", label: "CYB x86" },
+  ];
+  //
+
   const handleLogout = () => {
     logout();
     router.push("/");
@@ -102,6 +112,12 @@ export function TeacherDashboard() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">CSE 230 Computer Systems</h1>
+              <p className="text-sm text-yellow-300 font-semibold">
+                {selectedCourse === "cs-mips" && "CS MIPS"}
+                {selectedCourse === "cs-riscv" && "CS RISC-V"}
+                {selectedCourse === "cyb-x86" && "CYB x86"}
+                </p>
+
               <p className="text-sm text-white/90">Professor analytics</p>
             </div>
           </div>
@@ -120,6 +136,22 @@ export function TeacherDashboard() {
         <p className="text-gray-600 mb-6">
           Welcome, {user?.name ?? user?.email ?? "Professor"} — class performance and AI-generated mastery quizzes.
         </p>
+
+        <div className="flex gap-4 mb-6">
+          {courses.map((course) => (
+            <button
+              key={course.id}
+              onClick={() => setSelectedCourse(course.id)}
+              className={`px-4 py-2 rounded border ${
+                selectedCourse === course.id
+                  ? "bg-[#800020] text-white"
+                  : "bg-white text-[#800020] border-[#800020]"
+          }`}
+      > 
+        {course.label}
+      </button>
+    ))}
+    </div>
 
         {appState === "module-overview" && (
           <TeacherModuleSelector

@@ -18,12 +18,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }, []);
 
   useEffect(() => {
-    if (mounted && !loading && !isAuthenticated) {
-      router.replace('/login');
-    }
+    // Temporarily disable auth redirect for testing professor view
+//FIX LATER
+   // if (mounted && !loading && !isAuthenticated) {
+   //   router.replace('/login');
+   // }
   }, [mounted, isAuthenticated, loading, router]);
-
-  if (!mounted || loading || !isAuthenticated) {
+  //change back later
+ // if (!mounted || loading || !isAuthenticated) {
+ if (!mounted || loading ) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <p className="text-gray-600">Loading...</p>

@@ -161,6 +161,9 @@ export default function LoginPage() {
   const [studentJourney, setStudentJourney] = useState<StudentJourney>(null);
   const [studentTrack, setStudentTrack] = useState<StudentTrack>(null);
 
+  //prompt user for professor in create an account 
+  const [selectedProfessor, setSelectedProfessor] = useState<string>("");
+
   // Shared auth state (email, password, name, etc.)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -269,6 +272,13 @@ export default function LoginPage() {
       setError("Please select a track.");
       setIsLoading(false);
       return;
+    }
+
+    //Create account ask user what professor they have 
+    if (!selectedProfessor) {
+    setError("Please select a professor.");
+    setIsLoading(false);
+    return;
     }
 
     if (!email || !password || !confirmPassword || !name) {
@@ -900,6 +910,21 @@ export default function LoginPage() {
             {error}
           </div>
         )}
+        
+        <div style={{ marginBottom: "14px" }}>
+        <div style={fieldLabelStyle}>Professor</div>
+        <select
+        value={selectedProfessor}
+        onChange={(e) => setSelectedProfessor(e.target.value)}
+        style={inputStyle}
+        disabled={isLoading}
+        >
+          <option value="">Select a professor</option>
+          <option value="Steven Osburn">Steven Osburn</option>
+          <option value="Soumya Indela">Soumya Indela</option>
+          <option value="Swathi Punathumkandi">Swathi Punathumkandi</option>
+        </select>
+      </div>
 
         <form onSubmit={handleStudentSignup}>
           <div style={{ marginBottom: "14px" }}>
