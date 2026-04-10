@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -12,6 +11,11 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -25,8 +29,12 @@ services:
       - CORS_ALLOW_ORIGINS=http://localhost:3000,http://frontend:3000
       - CREATEAI_API_TOKEN=${CREATEAI_API_TOKEN}
       - CREATEAI_API_URL=${CREATEAI_API_URL}
+      - CANVAS_BASE_URL=${CANVAS_BASE_URL:-}
+      - USER_ACCESS_TOKEN=${USER_ACCESS_TOKEN:-}
+      - COURSE_ID=${COURSE_ID:-}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     ports:
       - "8000:8000"
 
@@ -40,7 +48,8 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
-      - backend
+      backend:
+        condition: service_started
     ports:
       - "3000:3000"
 

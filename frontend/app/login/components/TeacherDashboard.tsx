@@ -1,26 +1,78 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { LogOut, Users, BookOpen, BarChart3, FileText } from 'lucide-react';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+
+type CanvasSummary = {
+  courseName?: string;
+  canvas?: {
+    totalStudents: number;
+    totalPageViews: number;
+    totalParticipations: number;
+    avgPageViews: number;
+    avgParticipations: number;
+    moduleCount: number;
+    source: string;
+  };
+};
+
 export function TeacherDashboard() {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const router = useRouter();
+  const [summary, setSummary] = useState<CanvasSummary | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
 
   const handleLogout = () => {
     logout();
     router.push('/');
   };
 
-  // Mock data for teacher dashboard
-  const totalStudents = 45;
-  const activeModules = 13;
-  const averageMastery = 78;
-  const recentSubmissions = 12;
+  useEffect(() => {
+    if (!token) {
+      setSummaryLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setSummaryLoading(true);
+    setSummaryError(null);
+    fetch(`${API_URL}/canvas/teacher/summary`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const detail =
+            typeof data?.detail === 'string' ? data.detail : 'Could not load Canvas data.';
+          throw new Error(detail);
+        }
+        return data as CanvasSummary;
+      })
+      .then((data) => {
+        if (!cancelled) setSummary(data);
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setSummaryError(e.message);
+      })
+      .finally(() => {
+        if (!cancelled) setSummaryLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const c = summary?.canvas;
+  const totalStudents = c?.totalStudents ?? '—';
+  const activeModules = c?.moduleCount ?? '—';
+  const avgPageViews = c?.avgPageViews ?? '—';
+  const totalParticipations = c?.totalParticipations ?? '—';
 
   return (
     <div className="min-h-screen bg-white">
@@ -51,7 +103,16 @@ export function TeacherDashboard() {
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Welcome, {user?.name ?? user?.email ?? 'Professor'}!
           </h2>
-          <p className="text-gray-600">Manage your course and monitor student progress</p>
+          <p className="text-gray-600">
+            {summary?.courseName
+              ? `${summary.courseName} — Canvas-connected metrics`
+              : 'Manage your course and monitor student progress'}
+          </p>
+          {summaryError && (
+            <p className="mt-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+              Canvas: {summaryError}
+            </p>
+          )}
         </div>
 
         {/* Key Metrics */}
@@ -62,60 +123,90 @@ export function TeacherDashboard() {
               <Users className="h-4 w-4 text-[#800020]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{totalStudents}</div>
-              <p className="text-xs text-gray-600">Enrolled in course</p>
+              <div className="text-2xl font-bold text-gray-900">
+                {summaryLoading ? '…' : totalStudents}
+              </div>
+              <p className="text-xs text-gray-600">Students (Canvas)</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-900">Active Modules</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-900">Course modules</CardTitle>
               <BookOpen className="h-4 w-4 text-[#800020]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{activeModules}</div>
-              <p className="text-xs text-gray-600">Available modules</p>
+              <div className="text-2xl font-bold text-gray-900">
+                {summaryLoading ? '…' : activeModules}
+              </div>
+              <p className="text-xs text-gray-600">Modules in this Canvas course</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-900">Average Mastery</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-900">Avg page views</CardTitle>
               <BarChart3 className="h-4 w-4 text-[#800020]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{averageMastery}%</div>
-              <p className="text-xs text-gray-600">Across all students</p>
+              <div className="text-2xl font-bold text-gray-900">
+                {summaryLoading ? '…' : avgPageViews}
+              </div>
+              <p className="text-xs text-gray-600">Per student (Canvas analytics)</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-900">Recent Submissions</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-900">Participations</CardTitle>
               <FileText className="h-4 w-4 text-[#800020]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{recentSubmissions}</div>
-              <p className="text-xs text-gray-600">Last 24 hours</p>
+              <div className="text-2xl font-bold text-gray-900">
+                {summaryLoading ? '…' : totalParticipations}
+              </div>
+              <p className="text-xs text-gray-600">Total across students (Canvas)</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions — use router.push so navigation works with static export / full-card hit area */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <Link href="/module/1">
-              <CardHeader>
-                <CardTitle className="text-gray-900">View Course Modules</CardTitle>
-                <CardDescription className="text-gray-600">Browse and manage course content</CardDescription>
-              </CardHeader>
-            </Link>
+          <Card
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            role="link"
+            tabIndex={0}
+            onClick={() => router.push('/module/1')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                router.push('/module/1');
+              }
+            }}
+          >
+            <CardHeader>
+              <CardTitle className="text-gray-900">View Course Modules</CardTitle>
+              <CardDescription className="text-gray-600">Browse and manage course content</CardDescription>
+            </CardHeader>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            role="link"
+            tabIndex={0}
+            onClick={() => router.push('/login/teacher/students')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                router.push('/login/teacher/students');
+              }
+            }}
+          >
             <CardHeader>
               <CardTitle className="text-gray-900">Student Analytics</CardTitle>
-              <CardDescription className="text-gray-600">View detailed student performance metrics</CardDescription>
+              <CardDescription className="text-gray-600">
+                Per-student page views and participations from Canvas
+              </CardDescription>
             </CardHeader>
           </Card>
 

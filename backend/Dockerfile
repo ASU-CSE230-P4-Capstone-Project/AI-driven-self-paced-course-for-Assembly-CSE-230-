@@ -5,6 +5,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Upgrade pip first to avoid connection issues
+RUN pip install --upgrade pip setuptools wheel
+
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
