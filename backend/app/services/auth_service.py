@@ -41,12 +41,18 @@ class AuthService:
         email: str | None = None,
         sis_user_id: str | None = None,
         role: str | None = None,
+        professor_name: str | None = None,
+        student_journey: str | None = None,
+        student_track: str | None = None,
     ) -> None:
         user = Users(
             userid=userid,
             email=email,
             sis_user_id=sis_user_id,
             role=role,
+            professor_name=professor_name,
+            student_journey=student_journey,
+            student_track=student_track,
             hashed_password=self.hash_password(password),
         )
         db.add(user)

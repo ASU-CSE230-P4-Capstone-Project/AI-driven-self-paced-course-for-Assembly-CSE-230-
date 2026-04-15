@@ -75,6 +75,11 @@ type AuthContextValue = {
     sisUserId: string,
     password: string,
     role?: string,
+    extras?: {
+      professorName?: string;
+      studentJourney?: string | null;
+      studentTrack?: string | null;
+    },
   ) => Promise<AuthActionResult>;
   logout: () => void;
   loading: boolean;
@@ -225,13 +230,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sisUserId: string,
       password: string,
       role: string = "student",
+      extras?: {
+        professorName?: string;
+        studentJourney?: string | null;
+        studentTrack?: string | null;
+      },
     ): Promise<AuthActionResult> => {
       setLoading(true);
       try {
+        const normalizedEmail = String(email ?? "").trim().toLowerCase();
+        const professorName = String(extras?.professorName ?? "").trim() || null;
+        const studentJourney = extras?.studentJourney ? String(extras.studentJourney).trim() : null;
+        const studentTrack = extras?.studentTrack ? String(extras.studentTrack).trim() : null;
         const response = await fetch(`${API_URL}/auth/signup`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userid: email, email, sis_user_id: sisUserId, role, password }),
+          body: JSON.stringify({
+            userid: normalizedEmail,
+            email: normalizedEmail,
+            sis_user_id: sisUserId,
+            role,
+            password,
+            professor_name: professorName,
+            student_journey: studentJourney,
+            student_track: studentTrack,
+          }),
         });
 
         const data = await response.json().catch(() => ({}));
@@ -243,7 +266,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { success: false, error: detail };
         }
 
-        const result = await login(email, password, { name, role, id: email });
+        const result = await login(normalizedEmail, password, { name, role, id: normalizedEmail });
         if (result.success) {
           touchLastActive();
         }

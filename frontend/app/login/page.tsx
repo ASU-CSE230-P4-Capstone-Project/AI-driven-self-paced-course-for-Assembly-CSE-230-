@@ -160,6 +160,7 @@ export default function LoginPage() {
   const [role, setRole] = useState<UserRole>("student");
   const [studentJourney, setStudentJourney] = useState<StudentJourney>(null);
   const [studentTrack, setStudentTrack] = useState<StudentTrack>(null);
+  const [selectedProfessor, setSelectedProfessor] = useState<string>("");
 
   // Shared auth state (email, password, name, etc.)
   const [email, setEmail] = useState("");
@@ -278,6 +279,12 @@ export default function LoginPage() {
       return;
     }
 
+    if (!selectedProfessor) {
+      setError("Please select a professor.");
+      setIsLoading(false);
+      return;
+    }
+
     if (!email || !asuId || !password || !confirmPassword || !name) {
       setError("Please fill in all fields.");
       setIsLoading(false);
@@ -296,7 +303,11 @@ export default function LoginPage() {
       return;
     }
 
-    const result = await register(name, email, asuId, password, "student");
+    const result = await register(name, email, asuId, password, "student", {
+      professorName: selectedProfessor,
+      studentJourney,
+      studentTrack,
+    });
     if (!result.success) {
       setError(result.error || "Registration failed.");
       setIsLoading(false);
@@ -312,6 +323,7 @@ export default function LoginPage() {
     setConfirmPassword("");
     setName("");
     setProfessorKey("");
+    setSelectedProfessor("");
     setError("");
     // Don't reset studentJourney and studentTrack when just clearing form fields
   };
@@ -955,6 +967,21 @@ export default function LoginPage() {
               style={inputStyle}
               disabled={isLoading}
             />
+          </div>
+
+          <div style={{ marginBottom: "14px" }}>
+            <div style={fieldLabelStyle}>Professor</div>
+            <select
+              value={selectedProfessor}
+              onChange={(e) => setSelectedProfessor(e.target.value)}
+              style={inputStyle}
+              disabled={isLoading}
+            >
+              <option value="">Select a professor</option>
+              <option value="Steven Osburn">Steven Osburn</option>
+              <option value="Soumya Indela">Soumya Indela</option>
+              <option value="Swathi Punathumkandi">Swathi Punathumkandi</option>
+            </select>
           </div>
 
         <div style={{ marginBottom: "14px" }}>

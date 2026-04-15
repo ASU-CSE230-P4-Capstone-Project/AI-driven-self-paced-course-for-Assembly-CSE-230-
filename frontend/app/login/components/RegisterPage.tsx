@@ -35,6 +35,7 @@ export function RegisterPage() {
     password: '',
     confirmPassword: '',
     professorKey: '',
+    professorName: '',
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -103,6 +104,12 @@ export function RegisterPage() {
       }
     }
 
+    if (userType === "student") {
+      if (!formData.professorName.trim()) {
+        newErrors.professorName = "Please select a professor.";
+      }
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -112,7 +119,16 @@ export function RegisterPage() {
 
     // Attempt to register
     const role = userType === 'professor' ? 'professor' : 'student';
-    const result = await register(formData.name, formData.email, formData.sisUserId, formData.password, role);
+    const result = await register(
+      formData.name,
+      formData.email,
+      formData.sisUserId,
+      formData.password,
+      role,
+      userType === "student"
+        ? { professorName: formData.professorName }
+        : undefined,
+    );
 
     if (result.success) {
       setRegisteredRole(role);
@@ -269,6 +285,25 @@ export function RegisterPage() {
                       <p className="text-sm text-red-600">{errors.email}</p>
                     )}
                   </div>
+
+                  {userType === "student" ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="professorName">Professor</Label>
+                      <select
+                        id="professorName"
+                        value={formData.professorName}
+                        onChange={(e) => handleInputChange("professorName", e.target.value)}
+                        disabled={isLoading}
+                        className="h-10 w-full rounded border border-gray-300 bg-white px-3 text-sm"
+                      >
+                        <option value="">Select a professor</option>
+                        <option value="Steven Osburn">Steven Osburn</option>
+                        <option value="Soumya Indela">Soumya Indela</option>
+                        <option value="Swathi Punathumkandi">Swathi Punathumkandi</option>
+                      </select>
+                      {errors.professorName && <p className="text-sm text-red-600">{errors.professorName}</p>}
+                    </div>
+                  ) : null}
 
                   <div className="space-y-2">
                     <Label htmlFor="sisUserId">ASU ID (10-digit)</Label>

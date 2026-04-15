@@ -6,6 +6,9 @@ class UserCreate(BaseModel):
     email: str
     sis_user_id: str
     role: str = Field(default="student")
+    professor_name: str | None = None
+    student_journey: str | None = None
+    student_track: str | None = None
     password: str = Field(min_length=6, max_length=72)
 
 

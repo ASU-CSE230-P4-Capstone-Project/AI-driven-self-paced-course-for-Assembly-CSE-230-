@@ -62,6 +62,9 @@ async def signup(user: UserCreate, db: db_dependency) -> UserResponse:
     email = (user.email or "").strip().lower()
     sis = (user.sis_user_id or "").strip()
     role = (user.role or "student").strip().lower()
+    professor_name = (user.professor_name or "").strip() or None
+    student_journey = (user.student_journey or "").strip().lower() or None
+    student_track = (user.student_track or "").strip().lower() or None
 
     if not email.endswith("@asu.edu"):
         raise HTTPException(status_code=400, detail="Email must be an official ASU email (@asu.edu).")
@@ -89,6 +92,9 @@ async def signup(user: UserCreate, db: db_dependency) -> UserResponse:
         email=email,
         sis_user_id=sis,
         role=role,
+        professor_name=professor_name,
+        student_journey=student_journey,
+        student_track=student_track,
     )
     return UserResponse(userid=userid, message="User created successfully")
 

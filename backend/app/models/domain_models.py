@@ -10,6 +10,9 @@ class Users(Base):
     email = Column(String, unique=True, nullable=True)
     sis_user_id = Column(String, unique=True, nullable=True)
     role = Column(String, nullable=True)
+    professor_name = Column(String, nullable=True)
+    student_journey = Column(String, nullable=True)
+    student_track = Column(String, nullable=True)
     hashed_password = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
