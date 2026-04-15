@@ -18,7 +18,7 @@ type View =
   | "signup-student-track"   // pick track (MIPS/RISC-V/x86)
   | "signup-student-form";   // student signup form
 
-type UserRole = "student" | "professor";
+type UserRole = "student" | "staff";
 type StudentJourney = "cs" | "cybersecurity" | null;
 type StudentTrack = "mips" | "riscv" | "x86" | null;
 
@@ -163,6 +163,7 @@ export default function LoginPage() {
 
   // Shared auth state (email, password, name, etc.)
   const [email, setEmail] = useState("");
+  const [asuId, setAsuId] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
@@ -173,7 +174,7 @@ export default function LoginPage() {
   // Redirect after successful login/register based on user role
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === 'professor' || user.role === 'teacher') {
+      if (user.role === "staff") {
         router.push('/login/teacher');
       } else {
         router.push('/login/student');
@@ -215,7 +216,7 @@ export default function LoginPage() {
       return;
     }
 
-    const result = await login(email, password, { role: "professor" });
+    const result = await login(email, password, { role: "staff" });
     if (!result.success) {
       setError(result.error || "Login failed.");
       setIsLoading(false);
@@ -234,8 +235,14 @@ export default function LoginPage() {
       return;
     }
 
-    if (!email || !password || !confirmPassword || !name) {
+    if (!email || !asuId || !password || !confirmPassword || !name) {
       setError("Please fill in all fields.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!/^\d{10}$/.test(String(asuId).trim())) {
+      setError("ASU ID must be a 10-digit number.");
       setIsLoading(false);
       return;
     }
@@ -246,7 +253,7 @@ export default function LoginPage() {
       return;
     }
 
-    const result = await register(name, email, password, "professor");
+    const result = await register(name, email, asuId, password, "staff");
     if (!result.success) {
       setError(result.error || "Registration failed.");
       setIsLoading(false);
@@ -271,8 +278,14 @@ export default function LoginPage() {
       return;
     }
 
-    if (!email || !password || !confirmPassword || !name) {
+    if (!email || !asuId || !password || !confirmPassword || !name) {
       setError("Please fill in all fields.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!/^\d{10}$/.test(String(asuId).trim())) {
+      setError("ASU ID must be a 10-digit number.");
       setIsLoading(false);
       return;
     }
@@ -283,7 +296,7 @@ export default function LoginPage() {
       return;
     }
 
-    const result = await register(name, email, password, "student");
+    const result = await register(name, email, asuId, password, "student");
     if (!result.success) {
       setError(result.error || "Registration failed.");
       setIsLoading(false);
@@ -294,6 +307,7 @@ export default function LoginPage() {
   // Reset common fields when switching high-level flows
   const resetForm = () => {
     setEmail("");
+    setAsuId("");
     setPassword("");
     setConfirmPassword("");
     setName("");
@@ -384,11 +398,11 @@ export default function LoginPage() {
         style={secondaryButtonStyle}
         onClick={() => {
           resetAll();
-          setRole("professor");
+          setRole("staff");
           setView("signin-professor");
         }}
       >
-        Professor
+        Staff (Professor / TA)
       </button>
 
       <div style={footerTextStyle}>
@@ -415,7 +429,7 @@ export default function LoginPage() {
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <div>
             <div style={sectionTitleStyle}>
-              Sign in as {isStudent ? "Student" : "Professor"}
+              Sign in as {isStudent ? "Student" : "Staff"}
             </div>
             <div style={sectionSubtitleStyle}>
               Enter your credentials to continue
@@ -530,11 +544,11 @@ export default function LoginPage() {
         style={secondaryButtonStyle}
         onClick={() => {
           resetAll();
-          setRole("professor");
+          setRole("staff");
           setView("signup-professor-form");
         }}
       >
-        Professor
+        Staff (Professor / TA)
       </button>
 
       <div style={footerTextStyle}>
@@ -589,7 +603,7 @@ export default function LoginPage() {
           alignItems: "center",
         }}
       >
-        <span style={{ color: colors.text }}>Professor</span>
+        <span style={{ color: colors.text }}>Staff (Professor / TA)</span>
       </div>
 
       {error && (
@@ -646,6 +660,19 @@ export default function LoginPage() {
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
               setEmail(e.target.value)
             }
+            style={inputStyle}
+            disabled={isLoading}
+          />
+        </div>
+
+        <div style={{ marginBottom: "14px" }}>
+          <div style={fieldLabelStyle}>ASU ID (10-digit)</div>
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="ASU ID (10 digits)"
+            value={asuId}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setAsuId(e.target.value)}
             style={inputStyle}
             disabled={isLoading}
           />
@@ -930,6 +957,19 @@ export default function LoginPage() {
             />
           </div>
 
+        <div style={{ marginBottom: "14px" }}>
+          <div style={fieldLabelStyle}>ASU ID (10-digit)</div>
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="ASU ID (10 digits)"
+            value={asuId}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setAsuId(e.target.value)}
+            style={inputStyle}
+            disabled={isLoading}
+          />
+        </div>
+
           <div style={{ marginBottom: "14px" }}>
             <div style={fieldLabelStyle}>Password</div>
             <input
@@ -1003,7 +1043,7 @@ export default function LoginPage() {
         {view === "welcome" && renderWelcome()}
         {view === "signin-role" && renderSignInRole()}
         {view === "signin-student" && renderSignInForm("student")}
-        {view === "signin-professor" && renderSignInForm("professor")}
+        {view === "signin-professor" && renderSignInForm("staff")}
         {view === "signup-role" && renderSignupRole()}
         {view === "signup-professor-form" && renderProfessorSignupForm()}
         {view === "signup-student-journey" && renderStudentJourneyChoice()}

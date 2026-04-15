@@ -26,7 +26,7 @@ export function LoginPage() {
   // Redirect after successful login based on user role
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === 'professor' || user.role === 'teacher') {
+      if (user.role === 'staff') {
         router.push('/login/teacher');
       } else {
         router.push('/login/student');

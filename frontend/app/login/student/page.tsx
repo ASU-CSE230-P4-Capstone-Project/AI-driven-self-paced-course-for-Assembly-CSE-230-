@@ -18,7 +18,7 @@ export default function StudentDashboardPage() {
   useEffect(() => {
     if (mounted && !loading && isAuthenticated && user) {
       // Redirect teachers to their dashboard
-      if (user.role === 'professor' || user.role === 'teacher') {
+      if (user.role === 'staff') {
         router.replace('/login/teacher');
       }
     }

@@ -15,6 +15,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 export default function MasteryClientPage() {
     const params = useParams();
     const moduleId = params?.id as string;
+    const isValidId = /^\d+$/.test(String(moduleId ?? ""));
     const { token } = useAuth();
     const [quiz, setQuiz] = useState<MasteryQuizBundle | null>(null);
     const [loading, setLoading] = useState(true);
@@ -106,7 +107,7 @@ export default function MasteryClientPage() {
         }
     }, [moduleId, hasGenerated, generateQuiz]);
 
-    if (!moduleId) {
+    if (!moduleId || !isValidId) {
         return notFound();
     }
 

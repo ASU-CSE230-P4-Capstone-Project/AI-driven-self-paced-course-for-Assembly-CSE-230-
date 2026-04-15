@@ -72,6 +72,7 @@ type AuthContextValue = {
   register: (
     name: string,
     email: string,
+    sisUserId: string,
     password: string,
     role?: string,
   ) => Promise<AuthActionResult>;
@@ -85,6 +86,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => readStoredValue(TOKEN_STORAGE_KEY));
   const [user, setUser] = useState<AuthUser | null>(() => readStoredUser());
   const [loading, setLoading] = useState(false);
+
+  // Hydrate auth state from localStorage on first client mount.
+  // Client components can render on the server first, where `window` is undefined,
+  // so the useState initializer above would return null even if localStorage has a token.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setToken((prev) => prev ?? readStoredValue(TOKEN_STORAGE_KEY));
+    setUser((prev) => prev ?? readStoredUser());
+  }, []);
 
   // On mount or when token changes, enforce session timeout
   useEffect(() => {
@@ -147,10 +157,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ): Promise<AuthActionResult> => {
       setLoading(true);
       try {
+        const normalizedEmail = String(email ?? "").trim().toLowerCase();
         const response = await fetch(`${API_URL}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userid: email, password }),
+          body: JSON.stringify({ userid: normalizedEmail, password }),
         });
 
         const data = await response.json().catch(() => ({}));
@@ -166,15 +177,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { success: false, error: "Login response did not contain an access token." };
         }
 
+        // Authoritative user role comes from backend (DB-backed).
+        let resolvedRole = metadata?.role;
+        try {
+          const meResp = await fetch(`${API_URL}/auth/me`, {
+            headers: { Authorization: `Bearer ${data.access_token}` },
+          });
+          const me = await meResp.json().catch(() => ({}));
+          if (meResp.ok && typeof me?.role === "string") {
+            resolvedRole = me.role;
+          }
+        } catch {
+          // ignore; fallback to preserved/local role below
+        }
+
         // Try to get existing user data from localStorage to preserve role
         const existingUser = readStoredUser();
-        const preservedRole = existingUser?.email === email ? existingUser.role : undefined;
+        const preservedRole = existingUser?.email === normalizedEmail ? existingUser.role : undefined;
 
         const authUser: AuthUser = {
-          id: metadata?.id ?? email,
-          email,
+          id: metadata?.id ?? normalizedEmail,
+          email: normalizedEmail,
           name: metadata?.name ?? existingUser?.name,
-          role: metadata?.role ?? preservedRole ?? 'student',
+          role: resolvedRole ?? preservedRole ?? 'student',
         };
 
         setToken(data.access_token);
@@ -197,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (
       name: string,
       email: string,
+      sisUserId: string,
       password: string,
       role: string = "student",
     ): Promise<AuthActionResult> => {
@@ -205,7 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const response = await fetch(`${API_URL}/auth/signup`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userid: email, password }),
+          body: JSON.stringify({ userid: email, email, sis_user_id: sisUserId, role, password }),
         });
 
         const data = await response.json().catch(() => ({}));

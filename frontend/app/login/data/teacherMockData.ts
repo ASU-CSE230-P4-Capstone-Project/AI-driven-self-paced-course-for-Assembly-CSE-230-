@@ -19,6 +19,7 @@ export function getTeacherDashboardData(): TeacherDashboardData {
     totalStudents: 45,
     modules: [
       {
+        moduleId: "1",
         moduleName: "Module 1: Introduction to Computer Architecture",
         questions: [],
         completedStudents: 38,
@@ -27,6 +28,7 @@ export function getTeacherDashboardData(): TeacherDashboardData {
         averageScore: 72,
       },
       {
+        moduleId: "2",
         moduleName: "Module 2: MIPS Introduction, ALU and Data Transfer",
         questions: [],
         completedStudents: 35,
@@ -35,6 +37,7 @@ export function getTeacherDashboardData(): TeacherDashboardData {
         averageScore: 68,
       },
       {
+        moduleId: "3",
         moduleName: "Module 3: Branch Instructions and Machine Code",
         questions: [],
         completedStudents: 32,
@@ -43,6 +46,7 @@ export function getTeacherDashboardData(): TeacherDashboardData {
         averageScore: 70,
       },
       {
+        moduleId: "4",
         moduleName: "Module 4: Functions and Procedures",
         questions: [],
         completedStudents: 28,
@@ -51,6 +55,7 @@ export function getTeacherDashboardData(): TeacherDashboardData {
         averageScore: 65,
       },
       {
+        moduleId: "5",
         moduleName: "Module 5: Arrays and Pointers",
         questions: [],
         completedStudents: 30,

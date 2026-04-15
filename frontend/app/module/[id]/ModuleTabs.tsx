@@ -1,14 +1,17 @@
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
 
 export type ModuleActiveTab = "content" | "mastery" | "sandbox" | "tutor";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 type ModuleData = {
   title: string;
   description: string;
   mastery: string;
   progress: string;
-  readings: { title: string; time: string }[];
-  videos: { title: string; time: string }[];
+  readings: { title: string; time: string; url?: string | null; content_markdown?: string | null }[];
+  videos: { title: string; time: string; url?: string | null }[];
 };
 
 type ModuleTabsProps = {
@@ -23,8 +26,34 @@ function tabClass(active: boolean) {
     : "px-6 py-3 text-gray-600 hover:text-black transition-colors";
 }
 
+function resolveResourceUrl(url: string | null | undefined): string | null {
+  const u = String(url ?? "").trim();
+  if (!u) return null;
+  // PDFs uploaded via backend are returned as /static/...; make absolute so it opens from frontend origin.
+  if (u.startsWith("/static/")) return `${API_URL}${u}`;
+  return u;
+}
+
 export default function ModuleTabs({ moduleId, activeTab = "content", module }: ModuleTabsProps) {
   const a = activeTab;
+  const isValidModuleId = /^\d+$/.test(String(moduleId ?? ""));
+
+  const youtubeEmbedUrl = (url: string) => {
+    try {
+      const u = new URL(url);
+      if (u.hostname.includes("youtu.be")) {
+        const id = u.pathname.replace("/", "").trim();
+        return id ? `https://www.youtube.com/embed/${id}` : null;
+      }
+      if (u.hostname.includes("youtube.com")) {
+        const id = u.searchParams.get("v");
+        return id ? `https://www.youtube.com/embed/${id}` : null;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
 
   return (
     <>
@@ -32,30 +61,46 @@ export default function ModuleTabs({ moduleId, activeTab = "content", module }: 
         {a === "content" ? (
           <div className={tabClass(true)}>Learning Content</div>
         ) : (
-          <Link href={`/module/${moduleId}`} className={tabClass(false)}>
-            Learning Content
-          </Link>
+          isValidModuleId ? (
+            <Link href={`/module/${moduleId}`} className={tabClass(false)}>
+              Learning Content
+            </Link>
+          ) : (
+            <div className={tabClass(false)}>Learning Content</div>
+          )
         )}
         {a === "mastery" ? (
           <div className={tabClass(true)}>Practice &amp; Mastery</div>
         ) : (
-          <Link href={`/module/${moduleId}/mastery`} className={tabClass(false)}>
-            Practice &amp; Mastery
-          </Link>
+          isValidModuleId ? (
+            <Link href={`/module/${moduleId}/mastery`} className={tabClass(false)}>
+              Practice &amp; Mastery
+            </Link>
+          ) : (
+            <div className={tabClass(false)}>Practice &amp; Mastery</div>
+          )
         )}
         {a === "sandbox" ? (
           <div className={tabClass(true)}>Coding Sandbox</div>
         ) : (
-          <Link href={`/module/${moduleId}/sandbox`} className={tabClass(false)}>
-            Coding Sandbox
-          </Link>
+          isValidModuleId ? (
+            <Link href={`/module/${moduleId}/sandbox`} className={tabClass(false)}>
+              Coding Sandbox
+            </Link>
+          ) : (
+            <div className={tabClass(false)}>Coding Sandbox</div>
+          )
         )}
         {a === "tutor" ? (
           <div className={tabClass(true)}>AI Tutor</div>
         ) : (
-          <Link href={`/module/${moduleId}/tutor`} className={tabClass(false)}>
-            AI Tutor
-          </Link>
+          isValidModuleId ? (
+            <Link href={`/module/${moduleId}/tutor`} className={tabClass(false)}>
+              AI Tutor
+            </Link>
+          ) : (
+            <div className={tabClass(false)}>AI Tutor</div>
+          )
         )}
       </div>
 
@@ -77,23 +122,38 @@ export default function ModuleTabs({ moduleId, activeTab = "content", module }: 
 
               <div className="space-y-0">
                 {module.readings.map((reading, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-center py-4 ${index < module.readings.length - 1 ? "border-b border-gray-200" : ""}`}
-                  >
-                    <div className="w-6 h-6 mr-4 rounded-full bg-[#800020] flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-black font-medium">{reading.title}</h4>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-gray-500 text-sm">{reading.time}</span>
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                  <div key={index} className={`py-4 ${index < module.readings.length - 1 ? "border-b border-gray-200" : ""}`}>
+                    <div className="flex items-center">
+                      <div className="w-6 h-6 mr-4 rounded-full bg-[#800020] flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-black font-medium">{reading.title}</h4>
+                        {(reading.url || reading.content_markdown) && (
+                          <div className="mt-2 space-y-2">
+                            {resolveResourceUrl(reading.url) && (
+                              <a
+                                href={resolveResourceUrl(reading.url) ?? undefined}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-sm font-medium text-[#800020] hover:underline"
+                              >
+                                Open PDF / link
+                              </a>
+                            )}
+                            {reading.content_markdown && (
+                              <div className="prose prose-slate max-w-none">
+                                <ReactMarkdown>{reading.content_markdown}</ReactMarkdown>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-gray-500 text-sm">{reading.time}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -115,23 +175,42 @@ export default function ModuleTabs({ moduleId, activeTab = "content", module }: 
 
               <div className="space-y-0">
                 {module.videos.map((video, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-center py-4 ${index < module.videos.length - 1 ? "border-b border-gray-200" : ""}`}
-                  >
-                    <div className="w-6 h-6 mr-4 rounded-full bg-[#800020] flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-black font-medium">{video.title}</h4>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-gray-500 text-sm">{video.time}</span>
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                  <div key={index} className={`py-4 ${index < module.videos.length - 1 ? "border-b border-gray-200" : ""}`}>
+                    <div className="flex items-center">
+                      <div className="w-6 h-6 mr-4 rounded-full bg-[#800020] flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-black font-medium">{video.title}</h4>
+                        {video.url && (
+                          <div className="mt-3 space-y-2">
+                            <a
+                              href={video.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-sm font-medium text-[#800020] hover:underline"
+                            >
+                              Open video link
+                            </a>
+                            {youtubeEmbedUrl(video.url) && (
+                              <div className="aspect-video w-full overflow-hidden rounded border border-gray-200">
+                                <iframe
+                                  src={youtubeEmbedUrl(video.url) ?? undefined}
+                                  className="h-full w-full"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  title={video.title}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-gray-500 text-sm">{video.time}</span>
+                      </div>
                     </div>
                   </div>
                 ))}

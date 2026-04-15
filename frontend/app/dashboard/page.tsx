@@ -12,7 +12,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (user) {
       // Redirect based on user role
-      if (user.role === 'professor' || user.role === 'teacher') {
+      if (user.role === 'staff') {
         router.replace('/login/teacher');
       } else {
         router.replace('/login/student');

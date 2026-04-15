@@ -3,16 +3,65 @@ import re
 import html
 import ast
 import os
+import subprocess
+import tempfile
 from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import APIRouter, HTTPException, status
 
-from app.models.request_models import CreateAIQueryRequest, QuizGenerationRequest
+from app.models.request_models import CreateAIQueryRequest, QuizGenerationRequest, SandboxRunRequest
 from app.services.ai_service import CreateAIService, CreateAIServiceError
 from app.services import embedding_service, pinecone_service
+from app.services.canvas_service import router as canvas_router
 
 router = APIRouter(tags=["ai"])
 createai_service = CreateAIService()
+
+# Expose Canvas sync under the same /fetch prefix:
+# POST /fetch/sync/{course_id}
+router.include_router(canvas_router)
+
+
+@router.post("/sandbox/run")
+async def run_sandbox(body: SandboxRunRequest) -> dict[str, Any]:
+    """
+    Execute MIPS assembly using spim inside the backend container.
+    Returns stdout/stderr so the frontend sandbox can display real execution results.
+    """
+    src = (body.code or "").strip()
+    if not src:
+        raise HTTPException(status_code=400, detail="code is required")
+
+    timeout_s = float(body.timeout_seconds or 2.5)
+    # spim expects a file; write to a temp file in the container.
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".s", delete=True) as f:
+        f.write(src)
+        f.flush()
+
+        try:
+            proc = subprocess.run(
+                ["spim", "-f", f.name],
+                input=(body.stdin or "").encode("utf-8"),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=timeout_s,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(
+                status_code=500,
+                detail="Sandbox runtime not installed (missing spim in backend image). Rebuild containers.",
+            ) from exc
+        except subprocess.TimeoutExpired as exc:
+            out = (exc.stdout or b"").decode("utf-8", errors="replace")
+            err = (exc.stderr or b"").decode("utf-8", errors="replace")
+            return {"ok": False, "timeout": True, "stdout": out, "stderr": err}
+
+    return {
+        "ok": proc.returncode == 0,
+        "exit_code": int(proc.returncode),
+        "stdout": proc.stdout.decode("utf-8", errors="replace"),
+        "stderr": proc.stderr.decode("utf-8", errors="replace"),
+    }
 
 
 def _quiz_createai_service() -> CreateAIService:

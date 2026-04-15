@@ -4,16 +4,30 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { LogOut, UserCircle } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { LogOut } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Settings } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+
+type ModuleRow = {
+  id: number;
+  title: string;
+  description: string;
+  is_published: boolean;
+};
 
 export function Dashboard() {
   const { user, logout, token } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"modules" | "review">("modules");
+  const [canvasConnectMethod, setCanvasConnectMethod] = useState<"sis" | "email">("sis");
+  const [canvasConnectValue, setCanvasConnectValue] = useState("");
+  const [canvasConnectStatus, setCanvasConnectStatus] = useState<null | { ok: boolean; message: string }>(
+    null,
+  );
+  const [canvasConnected, setCanvasConnected] = useState(false);
+  const [showCanvasSettings, setShowCanvasSettings] = useState(false);
   const [progressMap, setProgressMap] = useState<
     Record<
       string,
@@ -36,6 +50,11 @@ export function Dashboard() {
       }
     >
   >({});
+  const [modules, setModules] = useState<ModuleRow[]>([]);
+  const handleAuthExpired = useCallback(() => {
+    logout();
+    router.push("/login");
+  }, [logout, router]);
 
   useEffect(() => {
     if (!token) return;
@@ -45,6 +64,10 @@ export function Dashboard() {
         const r = await fetch(`${API_URL}/progress/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        if (r.status === 401 || r.status === 403) {
+          if (!cancelled) handleAuthExpired();
+          return;
+        }
         if (!r.ok || cancelled) return;
         const data = (await r.json()) as {
           modules?: Record<string, { best_score_pct: number; attempts: number; last_score_pct: number }>;
@@ -57,7 +80,97 @@ export function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, handleAuthExpired]);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`${API_URL}/modules`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (r.status === 401 || r.status === 403) {
+          if (!cancelled) handleAuthExpired();
+          return;
+        }
+        if (!r.ok || cancelled) return;
+        const data = (await r.json()) as unknown;
+        if (!cancelled && Array.isArray(data)) {
+          setModules(
+            data
+              .map((m) => ({
+                id: Number((m as any)?.id ?? 0),
+                title: String((m as any)?.title ?? ""),
+                description: String((m as any)?.description ?? ""),
+                is_published: Boolean((m as any)?.is_published),
+              }))
+              .filter((m) => Number.isFinite(m.id) && m.id > 0 && m.title),
+          );
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, handleAuthExpired]);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`${API_URL}/pushback/me`, { headers: { Authorization: `Bearer ${token}` } });
+        if (r.status === 401 || r.status === 403) {
+          if (!cancelled) handleAuthExpired();
+          return;
+        }
+        const data = await r.json().catch(() => ({}));
+        if (cancelled) return;
+        setCanvasConnected(Boolean((data as any)?.connected));
+      } catch {
+        if (!cancelled) setCanvasConnected(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, handleAuthExpired]);
+
+  const connectCanvas = async () => {
+    if (!token) return;
+    const raw = String(canvasConnectValue ?? "").trim();
+    if (!raw) {
+      setCanvasConnectStatus({ ok: false, message: "Enter your ASU ID (10-digit) or ASU email." });
+      return;
+    }
+    setCanvasConnectStatus({ ok: true, message: "Connecting…" });
+    const r = await fetch(`${API_URL}/pushback/connect-me`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(
+        canvasConnectMethod === "sis"
+          ? { sis_user_id: raw }
+          : { email: raw },
+      ),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      setCanvasConnectStatus({
+        ok: false,
+        message: typeof data?.detail === "string" ? data.detail : "Failed to connect Canvas.",
+      });
+      return;
+    }
+    setCanvasConnectStatus({ ok: true, message: "Connected to Canvas successfully." });
+    setCanvasConnected(true);
+    setShowCanvasSettings(false);
+  };
 
   const handleLogout = () => {
     logout();
@@ -98,17 +211,14 @@ export function Dashboard() {
     }
   };
 
+  const moduleIds = modules.length > 0 ? modules.map((m) => m.id) : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
   const scoreForModule = (mid: number) => progressMap[String(mid)]?.best_score_pct ?? 0;
-  const attemptedCount = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].filter(
-    (mid) => (progressMap[String(mid)]?.attempts ?? 0) > 0,
-  ).length;
-  const completedModuleCount = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].filter(
-    (mid) => scoreForModule(mid) >= 70,
-  ).length;
+  const attemptedCount = moduleIds.filter((mid) => (progressMap[String(mid)]?.attempts ?? 0) > 0).length;
+  const completedModuleCount = moduleIds.filter((mid) => scoreForModule(mid) >= 70).length;
 
   const overallMasteryPct = attemptedCount
     ? Math.round(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].reduce(
+        moduleIds.reduce(
           (sum, mid) => sum + scoreForModule(mid),
           0,
         ) / attemptedCount,
@@ -179,6 +289,92 @@ export function Dashboard() {
             Welcome back, {user?.name ?? user?.email ?? 'Student'}!
           </h2>
           <p className="text-gray-600">Continue your mastery-based learning journey</p>
+        </div>
+
+        {/* Canvas connection */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mb-10">
+          {!canvasConnected ? (
+            <div className="flex items-start justify-between gap-6 flex-wrap">
+              <div className="min-w-[18rem]">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Connect Canvas</h3>
+                <p className="text-sm text-gray-600">
+                  To auto-sync grades, connect using your <span className="font-medium">ASU ID (10-digit)</span> or{" "}
+                  <span className="font-medium">ASU email</span>. You must be enrolled in the Canvas course.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <select
+                  value={canvasConnectMethod}
+                  onChange={(e) => setCanvasConnectMethod(e.target.value as "sis" | "email")}
+                  className="h-10 rounded border border-gray-300 bg-white px-2 text-sm"
+                >
+                  <option value="sis">ASU ID (10-digit)</option>
+                  <option value="email">Email</option>
+                </select>
+                <input
+                  value={canvasConnectValue}
+                  onChange={(e) => setCanvasConnectValue(e.target.value)}
+                  placeholder={canvasConnectMethod === "sis" ? "ASU ID (10 digits)" : "Email (e.g. name@asu.edu)"}
+                  className="h-10 w-64 rounded border border-gray-300 bg-white px-3 text-sm"
+                />
+                <Button type="button" onClick={connectCanvas} className="bg-[#800020] text-white hover:bg-[#6b001a]">
+                  Connect
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start justify-between gap-6 flex-wrap">
+              <div className="min-w-[18rem]">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Canvas connected</h3>
+                <p className="text-sm text-gray-600">
+                  Grades will auto-sync. You can update your connection if needed.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowCanvasSettings((v) => !v)}
+                className="border-gray-300"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </Button>
+            </div>
+          )}
+
+          {canvasConnected && showCanvasSettings && (
+            <div className="mt-4 rounded border border-gray-200 bg-gray-50 p-4">
+              <div className="text-sm font-semibold text-gray-900 mb-2">Update Canvas connection</div>
+              <div className="flex flex-wrap items-center gap-3">
+                <select
+                  value={canvasConnectMethod}
+                  onChange={(e) => setCanvasConnectMethod(e.target.value as "sis" | "email")}
+                  className="h-10 rounded border border-gray-300 bg-white px-2 text-sm"
+                >
+                  <option value="sis">ASU ID (10-digit)</option>
+                  <option value="email">Email</option>
+                </select>
+                <input
+                  value={canvasConnectValue}
+                  onChange={(e) => setCanvasConnectValue(e.target.value)}
+                  placeholder={canvasConnectMethod === "sis" ? "ASU ID (10 digits)" : "Email (e.g. name@asu.edu)"}
+                  className="h-10 w-64 rounded border border-gray-300 bg-white px-3 text-sm"
+                />
+                <Button type="button" onClick={connectCanvas} className="bg-[#800020] text-white hover:bg-[#6b001a]">
+                  Update
+                </Button>
+              </div>
+            </div>
+          )}
+          {canvasConnectStatus && (
+            <div
+              className={`mt-4 rounded border p-3 text-sm ${
+                canvasConnectStatus.ok ? "border-green-200 bg-green-50 text-green-800" : "border-red-200 bg-red-50 text-red-800"
+              }`}
+            >
+              {canvasConnectStatus.message}
+            </div>
+          )}
         </div>
 
         {/* Key Metrics - Horizontal Cards */}
@@ -267,291 +463,73 @@ export function Dashboard() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Core Modules</h2>
             
+            {modules.length === 0 ? (
+              <div className="rounded border border-gray-200 bg-white p-6 text-gray-700">
+                No modules yet. Your instructor will publish modules here.
+              </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Module 1 */}
-              <div className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-shadow overflow-hidden">
-                <Link href="/module/1" className="block p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Module 1: Introduction to Computer Architecture</h3>
-                  <p className="text-gray-600 text-sm mb-4">Abstraction layers, performance metrics, instruction sets, MIPS basics</p>
-                  <div className="mb-2">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-semibold text-gray-700">Best quiz score</span>
-                      <span className="text-gray-900 font-medium">{m1}%</span>
+              {modules.map((m) => {
+                const best = Math.round(scoreForModule(m.id));
+                const last = Math.round(progressMap[String(m.id)]?.last_score_pct ?? 0);
+                if (!m.is_published) {
+                  return (
+                    <div key={m.id} className="bg-gray-100 border border-gray-300 rounded-lg p-6 relative opacity-60 cursor-not-allowed">
+                      <div className="absolute top-4 right-4">
+                        <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-500 mb-2">Module {m.id}: {m.title}</h3>
+                      <p className="text-gray-400 text-sm mb-4">{m.description}</p>
+                      <div className="mb-2">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="font-semibold text-gray-400">Progress</span>
+                          <span className="text-gray-400 font-medium">Locked</span>
+                        </div>
+                        <div className="w-full bg-gray-300 rounded-full h-2">
+                          <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm border-t border-gray-200 pt-3">
+                        <span className="text-gray-400 font-medium cursor-not-allowed">Learn</span>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-[#800020] h-2 rounded-full transition-all" style={{ width: `${Math.min(100, m1)}%` }}></div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-700 text-sm">Latest attempt</span>
-                    <span className="bg-[#800020] text-white px-4 py-1 rounded-full text-sm font-semibold">
-                      {Math.round(progressMap["1"]?.last_score_pct ?? 0)}%
-                    </span>
-                  </div>
-                </Link>
-                <div className="px-6 pb-4 flex flex-wrap gap-x-4 gap-y-1 text-sm border-t border-gray-100 pt-3">
-                  <Link href="/module/1/tutor" className="text-[#800020] font-medium hover:underline">AI Tutor</Link>
-                  <Link href="/module/1/mastery" className="text-[#800020] font-medium hover:underline">Mastery quiz</Link>
-                  <Link href="/module/1/sandbox" className="text-[#800020] font-medium hover:underline">Sandbox</Link>
-                </div>
-              </div>
+                  );
+                }
 
-              {/* Module 2 */}
-              <div className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-shadow overflow-hidden">
-                <Link href="/module/2" className="block p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Module 2: MIPS Introduction, ALU and Data Transfer</h3>
-                  <p className="text-gray-600 text-sm mb-4">MIPS registers, arithmetic operations, load/store instructions, memory addressing</p>
-                  <div className="mb-2">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-semibold text-gray-700">Best quiz score</span>
-                      <span className="text-gray-900 font-medium">{m2}%</span>
+                return (
+                  <div key={m.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-shadow overflow-hidden">
+                    <div className="block p-6">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">Module {m.id}: {m.title}</h3>
+                      <p className="text-gray-600 text-sm mb-4">{m.description}</p>
+                      <div className="mb-2">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="font-semibold text-gray-700">Best quiz score</span>
+                          <span className="text-gray-900 font-medium">{best}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-[#800020] h-2 rounded-full transition-all" style={{ width: `${Math.min(100, best)}%` }}></div>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-gray-700 text-sm">Latest attempt</span>
+                        <span className="bg-[#800020] text-white px-4 py-1 rounded-full text-sm font-semibold">
+                          {last}%
+                        </span>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-[#800020] h-2 rounded-full transition-all" style={{ width: `${Math.min(100, m2)}%` }}></div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-700 text-sm">Latest attempt</span>
-                    <span className="bg-[#800020] text-white px-4 py-1 rounded-full text-sm font-semibold">
-                      {Math.round(progressMap["2"]?.last_score_pct ?? 0)}%
-                    </span>
-                  </div>
-                </Link>
-                <div className="px-6 pb-4 flex flex-wrap gap-x-4 gap-y-1 text-sm border-t border-gray-100 pt-3">
-                  <Link href="/module/2/tutor" className="text-[#800020] font-medium hover:underline">AI Tutor</Link>
-                  <Link href="/module/2/mastery" className="text-[#800020] font-medium hover:underline">Mastery quiz</Link>
-                  <Link href="/module/2/sandbox" className="text-[#800020] font-medium hover:underline">Sandbox</Link>
-                </div>
-              </div>
-
-              {/* Module 3 */}
-              <div className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-shadow overflow-hidden">
-                <Link href="/module/3" className="block p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Module 3: Branch Instructions and Machine Code</h3>
-                  <p className="text-gray-600 text-sm mb-4">Conditional branching, jump instructions, encoding MIPS to machine code</p>
-                  <div className="mb-2">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-semibold text-gray-700">Best quiz score</span>
-                      <span className="text-gray-900 font-medium">{m3}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-[#800020] h-2 rounded-full transition-all" style={{ width: `${Math.min(100, m3)}%` }}></div>
+                    <div className="px-6 pb-4 flex flex-wrap gap-x-4 gap-y-1 text-sm border-t border-gray-100 pt-3">
+                      <Link href={`/module/${Number(m.id)}`} className="text-[#800020] font-medium hover:underline">Learn</Link>
+                      <Link href={`/module/${Number(m.id)}/tutor`} className="text-[#800020] font-medium hover:underline">AI Tutor</Link>
+                      <Link href={`/module/${Number(m.id)}/mastery`} className="text-[#800020] font-medium hover:underline">Mastery quiz</Link>
+                      <Link href={`/module/${Number(m.id)}/sandbox`} className="text-[#800020] font-medium hover:underline">Sandbox</Link>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-700 text-sm">Latest attempt</span>
-                    <span className="bg-[#800020] text-white px-4 py-1 rounded-full text-sm font-semibold">
-                      {Math.round(progressMap["3"]?.last_score_pct ?? 0)}%
-                    </span>
-                  </div>
-                </Link>
-                <div className="px-6 pb-4 flex flex-wrap gap-x-4 gap-y-1 text-sm border-t border-gray-100 pt-3">
-                  <Link href="/module/3/tutor" className="text-[#800020] font-medium hover:underline">AI Tutor</Link>
-                  <Link href="/module/3/mastery" className="text-[#800020] font-medium hover:underline">Mastery quiz</Link>
-                  <Link href="/module/3/sandbox" className="text-[#800020] font-medium hover:underline">Sandbox</Link>
-                </div>
-              </div>
-
-              {/* Module 4 - Locked */}
-              <div className="bg-gray-100 border border-gray-300 rounded-lg p-6 relative opacity-60 cursor-not-allowed">
-                <div className="absolute top-4 right-4">
-                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-500 mb-2">Module 4: Procedure Execution</h3>
-                <p className="text-gray-400 text-sm mb-4">Function calls, stack frames, register conventions, procedure linkage</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-400">Progress</span>
-                    <span className="text-gray-400 font-medium">Locked</span>
-                  </div>
-                  <div className="w-full bg-gray-300 rounded-full h-2">
-                    <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Module 5 - Locked */}
-              <div className="bg-gray-100 border border-gray-300 rounded-lg p-6 relative opacity-60 cursor-not-allowed">
-                <div className="absolute top-4 right-4">
-                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-500 mb-2">Module 5: Linking, Loading and MIPS Summary</h3>
-                <p className="text-gray-400 text-sm mb-4">Object files, linking process, loaders, MIPS instruction set summary</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-400">Progress</span>
-                    <span className="text-gray-400 font-medium">Locked</span>
-                  </div>
-                  <div className="w-full bg-gray-300 rounded-full h-2">
-                    <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Module 6 - Locked */}
-              <div className="bg-gray-100 border border-gray-300 rounded-lg p-6 relative opacity-60 cursor-not-allowed">
-                <div className="absolute top-4 right-4">
-                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-500 mb-2">Module 6: Arithmetic For Computers</h3>
-                <p className="text-gray-400 text-sm mb-4">Integer arithmetic, floating point representation, arithmetic operations</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-400">Progress</span>
-                    <span className="text-gray-400 font-medium">Locked</span>
-                  </div>
-                  <div className="w-full bg-gray-300 rounded-full h-2">
-                    <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Module 7 - Locked */}
-              <div className="bg-gray-100 border border-gray-300 rounded-lg p-6 relative opacity-60 cursor-not-allowed">
-                <div className="absolute top-4 right-4">
-                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-500 mb-2">Module 7: Single Cycle Implementation</h3>
-                <p className="text-gray-400 text-sm mb-4">Single cycle datapath, control unit design, instruction execution</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-400">Progress</span>
-                    <span className="text-gray-400 font-medium">Locked</span>
-                  </div>
-                  <div className="w-full bg-gray-300 rounded-full h-2">
-                    <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Module 8 - Locked */}
-              <div className="bg-gray-100 border border-gray-300 rounded-lg p-6 relative opacity-60 cursor-not-allowed">
-                <div className="absolute top-4 right-4">
-                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-500 mb-2">Module 8: Multicycle Implementation</h3>
-                <p className="text-gray-400 text-sm mb-4">Multicycle datapath, finite state machine control, performance tradeoffs</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-400">Progress</span>
-                    <span className="text-gray-400 font-medium">Locked</span>
-                  </div>
-                  <div className="w-full bg-gray-300 rounded-full h-2">
-                    <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Module 9 - Locked */}
-              <div className="bg-gray-100 border border-gray-300 rounded-lg p-6 relative opacity-60 cursor-not-allowed">
-                <div className="absolute top-4 right-4">
-                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-500 mb-2">Module 9: Pipeline Implementation and Exception Handling</h3>
-                <p className="text-gray-400 text-sm mb-4">Pipeline stages, hazards, forwarding, exception handling</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-400">Progress</span>
-                    <span className="text-gray-400 font-medium">Locked</span>
-                  </div>
-                  <div className="w-full bg-gray-300 rounded-full h-2">
-                    <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Module 10 - Locked */}
-              <div className="bg-gray-100 border border-gray-300 rounded-lg p-6 relative opacity-60 cursor-not-allowed">
-                <div className="absolute top-4 right-4">
-                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-500 mb-2">Module 10: Memory Hierarchy and Direct Mapped Caches</h3>
-                <p className="text-gray-400 text-sm mb-4">Memory hierarchy, cache organization, direct mapped cache design</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-400">Progress</span>
-                    <span className="text-gray-400 font-medium">Locked</span>
-                  </div>
-                  <div className="w-full bg-gray-300 rounded-full h-2">
-                    <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Module 11 - Locked */}
-              <div className="bg-gray-100 border border-gray-300 rounded-lg p-6 relative opacity-60 cursor-not-allowed">
-                <div className="absolute top-4 right-4">
-                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-500 mb-2">Module 11: Associative Caches</h3>
-                <p className="text-gray-400 text-sm mb-4">Fully associative, set-associative caches, replacement policies</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-400">Progress</span>
-                    <span className="text-gray-400 font-medium">Locked</span>
-                  </div>
-                  <div className="w-full bg-gray-300 rounded-full h-2">
-                    <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Module 12 - Locked */}
-              <div className="bg-gray-100 border border-gray-300 rounded-lg p-6 relative opacity-60 cursor-not-allowed">
-                <div className="absolute top-4 right-4">
-                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-500 mb-2">Module 12: Virtual Memory</h3>
-                <p className="text-gray-400 text-sm mb-4">Virtual addresses, page tables, TLB, memory protection</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-400">Progress</span>
-                    <span className="text-gray-400 font-medium">Locked</span>
-                  </div>
-                  <div className="w-full bg-gray-300 rounded-full h-2">
-                    <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Module 13 - Locked */}
-              <div className="bg-gray-100 border border-gray-300 rounded-lg p-6 relative opacity-60 cursor-not-allowed">
-                <div className="absolute top-4 right-4">
-                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-500 mb-2">Module 13: Parallel Processors</h3>
-                <p className="text-gray-400 text-sm mb-4">Parallelism, multiprocessors, shared memory, synchronization</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-400">Progress</span>
-                    <span className="text-gray-400 font-medium">Locked</span>
-                  </div>
-                  <div className="w-full bg-gray-300 rounded-full h-2">
-                    <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
+            )}
           </div>
         ) : (
           <div>

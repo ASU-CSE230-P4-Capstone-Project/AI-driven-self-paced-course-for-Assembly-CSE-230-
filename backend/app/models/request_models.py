@@ -3,6 +3,9 @@ from pydantic import BaseModel, Field
 
 class UserCreate(BaseModel):
     userid: str
+    email: str
+    sis_user_id: str
+    role: str = Field(default="student")
     password: str = Field(min_length=6, max_length=72)
 
 
@@ -86,3 +89,54 @@ class PineconeIngestFolderRequest(BaseModel):
     chunk_overlap: int = Field(default=250, ge=0, le=4000)
     include_extensions: list[str] = Field(default_factory=lambda: [".pdf"])
     max_files: int = Field(default=5, ge=1, le=1000)
+
+
+class SandboxRunRequest(BaseModel):
+    code: str = Field(min_length=1, description="MIPS assembly source")
+    stdin: str | None = Field(default=None, description="Optional stdin for the program")
+    timeout_seconds: float | None = Field(default=2.5, ge=0.5, le=15.0)
+
+
+class CanvasConnectRequest(BaseModel):
+    # Students generally don't know Canvas numeric ids. Prefer SIS id or email.
+    canvas_user_id: int | None = Field(default=None, ge=1)
+    sis_user_id: str | None = Field(default=None, description="Student SIS id (e.g., 10-digit)")
+    email: str | None = Field(default=None)
+
+
+class CanvasConnectUserRequest(CanvasConnectRequest):
+    userid: str = Field(min_length=1, description="Platform userid to link (email/username used at signup)")
+
+
+class ModuleResourceIn(BaseModel):
+    kind: str = Field(description="reading or video")
+    title: str = Field(min_length=1)
+    duration: str = Field(default="", description="Display duration like '20 min'")
+    url: str | None = None
+    content_markdown: str | None = None
+
+
+class ModuleCreateRequest(BaseModel):
+    title: str = Field(min_length=1)
+    description: str = Field(default="")
+    is_published: bool = Field(default=False)
+    resources: list[ModuleResourceIn] = Field(default_factory=list)
+
+
+class ModuleUpdateRequest(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    is_published: bool | None = None
+    resources: list[ModuleResourceIn] | None = None
+
+
+class ModuleResourceOut(ModuleResourceIn):
+    id: int
+
+
+class ModuleOut(BaseModel):
+    id: int
+    title: str
+    description: str
+    is_published: bool
+    resources: list[ModuleResourceOut] = Field(default_factory=list)

@@ -31,6 +31,7 @@ export function RegisterPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    sisUserId: '',
     password: '',
     confirmPassword: '',
     professorKey: '',
@@ -42,6 +43,15 @@ export function RegisterPage() {
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+  };
+
+  const validateAsuEmail = (email: string): boolean => {
+    return validateEmail(email) && email.trim().toLowerCase().endsWith("@asu.edu");
+  };
+
+  const validateSisId = (sis: string): boolean => {
+    const s = sis.trim();
+    return /^\d{10}$/.test(s);
   };
 
   const validatePassword = (password: string): boolean => {
@@ -62,8 +72,14 @@ export function RegisterPage() {
 
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required.';
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address.';
+    } else if (!validateAsuEmail(formData.email)) {
+      newErrors.email = 'Please enter your official ASU email (@asu.edu).';
+    }
+
+    if (!formData.sisUserId.trim()) {
+      newErrors.sisUserId = 'ASU ID (10-digit) is required.';
+    } else if (!validateSisId(formData.sisUserId)) {
+      newErrors.sisUserId = 'ASU ID must be a 10-digit number.';
     }
 
     if (!formData.password) {
@@ -96,7 +112,7 @@ export function RegisterPage() {
 
     // Attempt to register
     const role = userType === 'professor' ? 'professor' : 'student';
-    const result = await register(formData.name, formData.email, formData.password, role);
+    const result = await register(formData.name, formData.email, formData.sisUserId, formData.password, role);
 
     if (result.success) {
       setRegisteredRole(role);
@@ -251,6 +267,22 @@ export function RegisterPage() {
                     />
                     {errors.email && (
                       <p className="text-sm text-red-600">{errors.email}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="sisUserId">ASU ID (10-digit)</Label>
+                    <Input
+                      id="sisUserId"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="ASU ID (10 digits)"
+                      value={formData.sisUserId}
+                      onChange={(e) => handleInputChange('sisUserId', e.target.value)}
+                      disabled={isLoading}
+                    />
+                    {errors.sisUserId && (
+                      <p className="text-sm text-red-600">{errors.sisUserId}</p>
                     )}
                   </div>
 

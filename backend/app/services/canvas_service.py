@@ -1,24 +1,25 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from canvasapi import Canvas
 import os
 import re
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-# Assuming these exist in your services/db.py
-from ..services.db import get_db 
+# DB session dependency
+from ..services.db import get_session
 
 router = APIRouter()
 
 # Configuration
-CANVAS_API_URL = "https://asu.instructure.com"
-# We pull this from environment, but in a multi-user app, 
-# this would eventually come from the 'auth' module.
-CANVAS_ACCESS_TOKEN = os.getenv("CANVAS_ACCESS_TOKEN")
+CANVAS_API_URL = (os.getenv("CANVAS_BASE_URL") or "https://canvas.asu.edu").rstrip("/")
+# For local/dev we use a Canvas Personal Access Token.
+# (Longer-term, in a multi-user app, this should come from the auth/session layer.)
+CANVAS_ACCESS_TOKEN = os.getenv("USER_ACCESS_TOKEN")
 
 class SyncResponse(BaseModel):
     status: str
     course_name: str
     items_synced: int
+    items: list[dict[str, str]] | None = None
 
 def clean_html(raw_html: str) -> str:
     """Removes HTML tags for cleaner RAG processing."""
@@ -27,13 +28,19 @@ def clean_html(raw_html: str) -> str:
     return re.sub(re.compile('<.*?>'), '', raw_html).strip()
 
 @router.post("/sync/{course_id}", response_model=SyncResponse)
-async def sync_course(course_id: int, db: Session = Depends(get_db)):
+async def sync_course(
+    course_id: int,
+    preview: bool = Query(False, description="If true, include extracted items in response"),
+    db: Session = Depends(get_session),
+):
     """
     Fetches data from Canvas and prepares it for the DB.
     Accessed at: /fetch/sync/{course_id}
     """
+    if not CANVAS_API_URL:
+        raise HTTPException(status_code=500, detail="Canvas base URL not configured (CANVAS_BASE_URL)")
     if not CANVAS_ACCESS_TOKEN:
-        raise HTTPException(status_code=500, detail="Canvas Token not configured")
+        raise HTTPException(status_code=500, detail="Canvas token not configured (USER_ACCESS_TOKEN)")
 
     try:
         canvas = Canvas(CANVAS_API_URL, CANVAS_ACCESS_TOKEN)
@@ -80,7 +87,8 @@ async def sync_course(course_id: int, db: Session = Depends(get_db)):
         return SyncResponse(
             status="success",
             course_name=course.name,
-            items_synced=len(extracted_content)
+            items_synced=len(extracted_content),
+            items=extracted_content if preview else None,
         )
 
     except Exception as e:

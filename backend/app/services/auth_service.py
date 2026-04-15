@@ -32,8 +32,23 @@ class AuthService:
         encoded = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
         return Token(access_token=encoded)
 
-    def register_user(self, db: Session, userid: str, password: str) -> None:
-        user = Users(userid=userid, hashed_password=self.hash_password(password))
+    def register_user(
+        self,
+        db: Session,
+        userid: str,
+        password: str,
+        *,
+        email: str | None = None,
+        sis_user_id: str | None = None,
+        role: str | None = None,
+    ) -> None:
+        user = Users(
+            userid=userid,
+            email=email,
+            sis_user_id=sis_user_id,
+            role=role,
+            hashed_password=self.hash_password(password),
+        )
         db.add(user)
         db.commit()
 

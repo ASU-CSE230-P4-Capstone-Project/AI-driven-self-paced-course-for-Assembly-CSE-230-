@@ -11,11 +11,18 @@ import { MasteryCheckBuilder } from './MasteryCheckBuilder';
 interface TeacherModuleSelectorProps {
   modules: ModuleAnalytics[];
   totalStudents: number;
-  onSelectModule: (moduleName: string) => void;
+  onSelectModule: (moduleId: string, moduleName: string) => void;
   onCreateMasteryTest: (questions: Question[], moduleName: string) => void;
+  mode?: "overview" | "students";
 }
 
-export function TeacherModuleSelector({ modules, totalStudents, onSelectModule, onCreateMasteryTest }: TeacherModuleSelectorProps) {
+export function TeacherModuleSelector({
+  modules,
+  totalStudents,
+  onSelectModule,
+  onCreateMasteryTest,
+  mode = "overview",
+}: TeacherModuleSelectorProps) {
   // Calculate overall statistics
   const totalCompleted = modules.reduce((sum, m) => sum + m.completedStudents, 0);
   const avgCompletionRate = modules.length
@@ -29,7 +36,7 @@ export function TeacherModuleSelector({ modules, totalStudents, onSelectModule, 
   return (
     <div className="space-y-6">
       <div className="border-l-4 border-yellow-600 pl-4">
-        <h1 className="text-[#800020]">Professor Analytics Dashboard</h1>
+        <h1 className="text-[#800020]">{mode === "students" ? "Students by module" : "Analytics overview"}</h1>
         <p className="text-gray-600">
           Arizona State University - CSE 230: Computer Org / Assemb Lang Prog
         </p>
@@ -128,21 +135,22 @@ export function TeacherModuleSelector({ modules, totalStudents, onSelectModule, 
                   <Progress value={module.averageScore} className="h-2" />
                 </div>
 
-                <Button 
-                  onClick={() => onSelectModule(module.moduleName)} 
-                  variant="default"
-                  className="w-full !bg-[#800020] !text-white hover:!bg-[#5f0018] focus-visible:!ring-[#800020]/30"
-                >
-                  View Students
-                </Button>
+                {mode === "students" ? (
+                  <Button
+                    onClick={() => onSelectModule(String(module.moduleId ?? ""), module.moduleName)}
+                    variant="default"
+                    className="w-full bg-[#800020]! text-white! hover:bg-[#5f0018]! focus-visible:ring-[#800020]/30!"
+                  >
+                    View Students
+                  </Button>
+                ) : null}
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      {/* Question Generator Section */}
-      <MasteryCheckBuilder modules={modules} onCreateTest={onCreateMasteryTest} />
+      {/* Question generator lives in the Mastery tab now (not here). */}
     </div>
   );
 }

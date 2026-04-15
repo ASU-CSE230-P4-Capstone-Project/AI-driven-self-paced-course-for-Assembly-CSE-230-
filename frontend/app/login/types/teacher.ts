@@ -17,6 +17,7 @@ export interface QuestionAnalytics {
  * Module-level analytics data
  */
 export interface ModuleAnalytics {
+  moduleId: string;
   moduleName: string;
   questions: QuestionAnalytics[];
   completedStudents: number;
