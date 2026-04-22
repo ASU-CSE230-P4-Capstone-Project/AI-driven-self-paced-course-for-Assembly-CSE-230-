@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MIPS Emulator · Students</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">MIPS Emulator</div>
+    <nav class="nav">
+      <a href="index.html">Labs</a>
+      <a href="teacher.html">Professor View</a>
+      <a href="students.html" class="active">Students</a>
+      <a href="testgen.html">Test Generator</a>
+    </nav>
+  </header>
+
+  <main class="two-pane students-two-pane">
+
+    <!-- Left: Student roster -->
+    <aside class="pane left-pane">
+      <div class="library-header">
+        <div>
+          <div>Students</div>
+          <small id="student-count"></small>
+        </div>
+      </div>
+
+      <div class="stu-search-wrap">
+        <input id="stu-search" class="input stu-search-input" placeholder="Search name, ASU ID, email…" />
+      </div>
+
+      <div class="stu-roster" id="stu-roster">
+        <div class="stu-loading">Loading students…</div>
+      </div>
+    </aside>
+
+    <!-- Right: Student detail + Roster viewer -->
+    <section class="pane editor-pane stu-detail-pane">
+      <div id="stu-placeholder" class="stu-placeholder">
+        <div class="stu-placeholder-icon">👤</div>
+        <div>Select a student from the list to view their submissions</div>
+      </div>
+
+      <div id="stu-detail" class="stu-detail" style="display:none;">
+        <div class="stu-header-card" id="stu-header-card"></div>
+        <div class="stu-stats-row" id="stu-stats-row"></div>
+        <div class="stu-labs-section">
+          <div class="stu-labs-title">Lab Submissions</div>
+          <div id="stu-labs-list" class="stu-labs-list"></div>
+        </div>
+      </div>
+
+      <!-- Course Roster Section -->
+      <div class="export-section" id="roster-section">
+          <div class="export-header">
+            <span>Course Roster</span>
+            <div class="roster-header-actions">
+              <small id="roster-count"></small>
+              <input id="roster-search" class="input" placeholder="Search roster…" style="width:160px;font-size:12px;padding:3px 7px;" />
+              <a id="roster-export-btn" href="#" class="roster-action-link" title="Download current roster as CSV">Download ↓</a>
+              <label class="roster-upload-btn">
+                Upload (.csv / .xlsx)
+                <input type="file" id="roster-file-input" accept=".csv,.xlsx,.xls" style="display:none" />
+              </label>
+              <a href="/api/roster/template" class="roster-action-link" title="Download a CSV template">Template ↓</a>
+              <button id="roster-clear-btn" class="roster-action-link roster-clear-link" title="Remove all roster entries">Clear All</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="roster-status" class="roster-status"></div>
+
+        <div class="roster-table-wrap" id="roster-table-wrap">
+          <table class="roster-table" id="roster-table" style="display:none;">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>ASURITE</th>
+                <th>ASU ID</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="roster-tbody"></tbody>
+          </table>
+          <div id="roster-empty" class="tc-empty">No roster uploaded yet. Use the upload button above to import your class list.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { checkAuth } from './auth-check.js';
+    window.__currentUser = await checkAuth({ requireRole: ['instructor', 'ta'] });
+  </script>
+  <script type="module" src="students.js"></script>
+</body>
+</html>

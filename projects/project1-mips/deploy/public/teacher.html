@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MIPS Emulator · Teacher View</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">MIPS Emulator</div>
+    <nav class="nav">
+      <a href="index.html">Labs</a>
+      <a href="teacher.html" class="active">Professor View</a>
+      <a href="students.html">Students</a>
+      <a href="testgen.html">Test Generator</a>
+    </nav>
+  </header>
+
+  <main class="two-pane teacher-two-pane">
+    <!--left side the lib-->
+    <aside class="pane left-pane">
+      <div class="library-header">
+        <div>
+          <div>Lesson Library</div>
+          <small id="doc-count"></small>
+        </div>
+        <button class="btn-ghost" id="btn-collapse-library">Hide</button>
+      </div>
+
+      <div id="library">
+        <div class="doc-chip">
+          <div class="doc-chip-title">
+            <span id="doc-title">No lesson selected</span>
+            <small id="doc-time"></small>
+          </div>
+          <div class="doc-chip-actions">
+            <button id="btn-new">New</button>
+            <button id="btn-delete">Delete</button>
+            <button id="btn-open">Open in Labs</button>
+            <button id="btn-export">Export</button>
+            <label class="btn-ghost">
+              Import
+              <input id="file-import" type="file" accept="application/json" style="display:none" />
+            </label>
+          </div>
+        </div>
+
+        <div class="lesson-list" id="lesson-list">
+        </div>
+      </div>
+    </aside>
+
+    <!-- right editor  and the preview -->
+    <section class="pane editor-pane">
+      <div class="toolbar">
+        <input id="lesson-id" class="input" placeholder="lesson-id" />
+        <input id="lesson-title" class="input" placeholder="Lesson title" />
+        <button id="btn-save">Save</button>
+      </div>
+
+      <div class="formatbar">
+        <div class="fmt-toolbar">
+          <button type="button" class="fmt-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+          <button type="button" class="fmt-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+          <button type="button" class="fmt-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+          <button type="button" class="fmt-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+          <span class="fmt-sep"></span>
+          <button type="button" class="fmt-btn" data-cmd="formatBlock" data-val="h1" title="Heading 1">H1</button>
+          <button type="button" class="fmt-btn" data-cmd="formatBlock" data-val="h2" title="Heading 2">H2</button>
+          <button type="button" class="fmt-btn" data-cmd="formatBlock" data-val="h3" title="Heading 3">H3</button>
+          <button type="button" class="fmt-btn" data-cmd="formatBlock" data-val="p" title="Paragraph">¶</button>
+          <span class="fmt-sep"></span>
+          <button type="button" class="fmt-btn" data-cmd="insertUnorderedList" title="Bullet list">• List</button>
+          <button type="button" class="fmt-btn" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+          <span class="fmt-sep"></span>
+          <button type="button" class="fmt-btn" id="fmt-link" title="Insert / edit link">🔗 Link</button>
+          <button type="button" class="fmt-btn" id="fmt-table" title="Insert table">⊞ Table</button>
+          <button type="button" class="fmt-btn" data-cmd="insertHorizontalRule" title="Horizontal rule">― HR</button>
+          <span class="fmt-sep"></span>
+          <button type="button" class="fmt-btn" data-cmd="undo" title="Undo">↩</button>
+          <button type="button" class="fmt-btn" data-cmd="redo" title="Redo">↪</button>
+        </div>
+      </div>
+
+      <div class="editor-preview-wrap">
+        <div class="editable-wrap">
+          <div id="editor" class="editable" contenteditable="true"></div>
+          <div class="footer-note" id="save-status">Unsaved</div>
+        </div>
+
+        <div class="preview-wrap">
+          <div id="preview" class="preview-surface"></div>
+        </div>
+      </div>
+
+      <!-- Starter Code Editor -->
+      <div class="starter-code-section" id="starter-code-section" style="display:none;">
+        <div class="starter-code-header">
+          <span>Starter Code (MIPS Assembly)</span>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button id="btn-save-starter" class="btn-ghost">Save</button>
+            <button id="btn-clear-starter" class="btn-ghost">Clear</button>
+            <button id="btn-collapse-starter" class="btn-ghost">Hide</button>
+          </div>
+        </div>
+        <div id="starter-code-body" class="starter-code-body">
+          <textarea id="starter-code-editor" class="starter-code-textarea"
+                    spellcheck="false"
+                    placeholder="# Enter the starter code students will see when they open this lab&#10;# e.g.&#10;li $t0, 10&#10;li $t1, 20"></textarea>
+        </div>
+      </div>
+
+      <!-- Solution Code Editor -->
+      <div class="starter-code-section" id="solution-code-section" style="display:none;">
+        <div class="starter-code-header">
+          <span>Solution Code (MIPS Assembly)</span>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button id="btn-verify-solution" class="btn-ghost" title="Open in Test Generator to verify">Verify →</button>
+            <button id="btn-save-solution" class="btn-ghost">Save</button>
+            <button id="btn-clear-solution" class="btn-ghost">Clear</button>
+            <button id="btn-collapse-solution" class="btn-ghost">Hide</button>
+          </div>
+        </div>
+        <div id="solution-code-body" class="starter-code-body">
+          <textarea id="solution-code-editor" class="starter-code-textarea"
+                    spellcheck="false"
+                    placeholder="# Enter the solution code (instructor only — not shown to students)"></textarea>
+        </div>
+      </div>
+
+      <!-- Test Cases Manager -->
+      <div class="tc-manager" id="tc-manager" style="display:none;">
+        <div class="tc-manager-header">
+          <span>Test Cases</span>
+          <div class="tc-manager-actions">
+            <button id="btn-add-tc">+ Add Test Case</button>
+            <button id="btn-collapse-tc" class="btn-ghost">Hide</button>
+          </div>
+        </div>
+
+        <div id="tc-list" class="tc-list">
+          <div class="tc-empty">Select a lab to view test cases</div>
+        </div>
+      </div>
+
+      <!-- Add / Edit Test Case Modal -->
+      <div id="tc-modal-overlay" class="tc-modal-overlay" style="display:none;">
+        <div class="tc-modal">
+          <div class="tc-modal-title" id="tc-modal-title">Add Test Case</div>
+
+          <label>
+            Name
+            <input id="tc-name" class="input tc-input" placeholder="e.g. Check register values" />
+          </label>
+          <label>
+            Points
+            <input id="tc-points" class="input tc-input" type="number" min="0" value="10" />
+          </label>
+          <label>
+            Description (optional)
+            <input id="tc-desc" class="input tc-input" placeholder="Brief description" />
+          </label>
+
+          <div class="tc-row">
+            <label class="tc-half">
+              <input id="tc-hidden" type="checkbox" /> Hidden from students
+            </label>
+            <label class="tc-half">
+              Timeout (s)
+              <input id="tc-timeout" class="input tc-input-sm" type="number" min="1" value="5" />
+            </label>
+          </div>
+
+          <fieldset class="tc-fieldset">
+            <legend>Initial Registers (input)</legend>
+            <div id="tc-init-regs" class="tc-kv-list"></div>
+            <button type="button" class="btn-ghost tc-add-row" data-target="tc-init-regs" data-placeholder-key="$t0" data-placeholder-val="0">+ register</button>
+          </fieldset>
+
+          <fieldset class="tc-fieldset">
+            <legend>Initial Memory (input)</legend>
+            <div id="tc-init-mem" class="tc-kv-list"></div>
+            <button type="button" class="btn-ghost tc-add-row" data-target="tc-init-mem" data-placeholder-key="268435456" data-placeholder-val="0">+ address</button>
+          </fieldset>
+
+          <fieldset class="tc-fieldset">
+            <legend>Expected Registers (output)</legend>
+            <div id="tc-exp-regs" class="tc-kv-list"></div>
+            <button type="button" class="btn-ghost tc-add-row" data-target="tc-exp-regs" data-placeholder-key="$t0" data-placeholder-val="30">+ register</button>
+          </fieldset>
+
+          <fieldset class="tc-fieldset">
+            <legend>Expected Memory (output)</legend>
+            <div id="tc-exp-mem" class="tc-kv-list"></div>
+            <button type="button" class="btn-ghost tc-add-row" data-target="tc-exp-mem" data-placeholder-key="268435456" data-placeholder-val="30">+ address</button>
+          </fieldset>
+
+          <div class="tc-modal-buttons">
+            <button id="tc-modal-cancel">Cancel</button>
+            <button id="tc-modal-save">Save Test Case</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { checkAuth } from './auth-check.js';
+    window.__currentUser = await checkAuth({ requireRole: ['instructor', 'ta'] });
+  </script>
+  <script type="module" src="teacher.js"></script>
+</body>
+</html>

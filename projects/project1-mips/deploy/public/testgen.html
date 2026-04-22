@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/mode/simple.min.js"></script>
+  <title>MIPS Emulator · Test Case Generator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">MIPS Emulator</div>
+    <nav class="nav">
+      <a href="index.html">Labs</a>
+      <a href="teacher.html">Professor View</a>
+      <a href="students.html">Students</a>
+      <a href="testgen.html" class="active">Test Generator</a>
+    </nav>
+  </header>
+
+  <main class="tg-layout">
+
+    <!-- ── Left column: inputs + code ── -->
+    <section class="tg-left">
+
+      <!-- Lab selector + test case name -->
+      <div class="tg-toolbar">
+        <div class="tg-toolbar-row">
+          <label class="tg-label">Lab
+            <select id="tg-lab-select" class="tg-select">
+              <option value="">Loading labs…</option>
+            </select>
+          </label>
+          <label class="tg-label">Test Name
+            <input id="tg-tc-name" class="input tg-input" placeholder="e.g. Basic addition check" />
+          </label>
+          <label class="tg-label tg-label-sm">Points
+            <input id="tg-tc-points" class="input tg-input-sm" type="number" min="0" value="10" />
+          </label>
+          <label class="tg-label tg-label-sm" title="Hidden from students">
+            <input id="tg-tc-hidden" type="checkbox" /> Hidden
+          </label>
+        </div>
+      </div>
+
+      <!-- Initial values -->
+      <div class="tg-section">
+        <div class="tg-section-header">
+          <span>Initial Values (inputs to the program)</span>
+          <button id="btn-collapse-inputs" class="btn-ghost">Hide</button>
+        </div>
+        <div id="tg-inputs-body" class="tg-section-body">
+          <div class="tg-inputs-grid">
+            <fieldset class="tc-fieldset">
+              <legend>Registers</legend>
+              <div id="tg-init-regs" class="tc-kv-list"></div>
+              <button type="button" class="btn-ghost tc-add-row" data-target="tg-init-regs" data-placeholder-key="$t0" data-placeholder-val="0">+ register</button>
+            </fieldset>
+            <fieldset class="tc-fieldset">
+              <legend>Memory</legend>
+              <div id="tg-init-mem" class="tc-kv-list"></div>
+              <button type="button" class="btn-ghost tc-add-row" data-target="tg-init-mem" data-placeholder-key="268435456" data-placeholder-val="0">+ address</button>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+
+      <!-- Code editor -->
+      <div class="tg-section tg-editor-section">
+        <div class="tg-section-header">
+          <span>MIPS Code (solution)</span>
+          <div class="tg-editor-actions">
+            <button id="tg-load-starter" class="btn-ghost" title="Load the selected lab's starter code">Load Starter</button>
+            <button id="tg-load-solution" class="btn-ghost" title="Load the selected lab's solution code">Load Solution</button>
+          </div>
+        </div>
+        <div class="tg-editor-wrap">
+          <textarea id="tg-code" spellcheck="false"></textarea>
+        </div>
+      </div>
+
+      <!-- Run controls -->
+      <div class="tg-run-bar">
+        <button id="tg-run" class="tg-btn tg-btn-run">▶ Run</button>
+        <button id="tg-step" class="tg-btn tg-btn-step">Step</button>
+        <button id="tg-stop" class="tg-btn tg-btn-stop">Stop</button>
+        
+        <label class="tg-label tg-label-sm" title="Simulate memory isolation mode used by the autograder">
+          <input id="tg-simulate-isolation" type="checkbox" /> Simulate Isolation
+        </label>
+
+        <span id="tg-run-status" class="tg-run-status"></span>
+      </div>
+
+      <!-- Console -->
+      <div class="tg-console">
+        <div class="tg-console-header">Console</div>
+        <div id="tg-console-output" class="tg-console-inner">Ready.\n</div>
+      </div>
+    </section>
+
+    <!-- ── Right column: results + capture ── -->
+    <section class="tg-right">
+
+      <!-- Registers after run -->
+      <div class="tg-section tg-results-section">
+        <div class="tg-section-header">
+          <span>Registers After Run</span>
+          <button id="tg-select-all-regs" class="btn-ghost">Select all</button>
+        </div>
+        <div id="tg-result-regs" class="tg-result-regs">
+          <div class="tg-placeholder">Run code to see results</div>
+        </div>
+      </div>
+
+      <!-- Memory viewer with capture -->
+      <div class="tg-section">
+        <div class="tg-section-header">
+          <span>Memory After Run</span>
+        </div>
+        <div class="tg-mem-controls">
+          <input type="text" id="tg-mem-addr" class="input tg-input-sm" value="0x10000000" placeholder="Address" style="width:120px;" />
+          <button id="tg-mem-go" class="btn-ghost">Go</button>
+          <span class="tg-mem-hint">Click an address below to capture it</span>
+        </div>
+        <div id="tg-mem-view" class="tg-mem-view"></div>
+        <div class="tg-captured-section">
+          <div class="tg-captured-label">Captured memory expectations:</div>
+          <div id="tg-captured-mem" class="tc-kv-list"></div>
+          <button type="button" class="btn-ghost tc-add-row" data-target="tg-captured-mem" data-placeholder-key="268435456" data-placeholder-val="0">+ manual address</button>
+        </div>
+      </div>
+
+      <!-- Save -->
+      <div class="tg-save-bar">
+        <button id="tg-verify" class="tg-btn tg-btn-run">✓ Run Test Cases</button>
+        <div class="tg-save-bar-sep"></div>
+        <button id="tg-save" class="tg-btn tg-btn-save">Save as Test Case</button>
+      </div>
+      <div id="tg-verify-results" class="tg-verify-results" style="display:none;"></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { checkAuth } from './auth-check.js';
+    window.__currentUser = await checkAuth({ requireRole: ['instructor', 'ta'] });
+  </script>
+  <script type="module" src="testgen.js"></script>
+</body>
+</html>
