@@ -1,0 +1,64 @@
+**/__pycache__/**
+
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+.venv
+*/.venv
+vscode/
+vscode
+.vscode
+.vscode/
+
+# dependencies
+riscv/node_modules/**
+prototype_interp/venv/
+/node_modules
+*/node_modules
+node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+riscv/.next-dev/
+
+# production
+/build
+
+# misc
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!riscv/.env.example
+!prototype_interp/.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+#mac-annoying
+**/.DS_Store
+.DS_Store
+
+#cache annoying
+__pycache__/
+*.pyc
+prototype_interp/__pycache__/*
