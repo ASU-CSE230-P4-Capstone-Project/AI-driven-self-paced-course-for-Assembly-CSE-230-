@@ -1,0 +1,55 @@
+; Lab 2: Loops - Remove all occurrences of val from array
+; Memory layout:
+;   [0x1F00] = n   (array length, updated after removal)
+;   [0x1F04] = val (value to remove)
+;   Array A[] at 0x2000
+;
+; Register use:
+;   ECX = n (array length, decremented on each removal)
+;   EDX = val (value to remove, constant)
+;   EBX = base address of A[]
+;   EAX = i (outer loop index)
+;   ESI = k (inner shift loop index)
+;   EDI = temp
+
+MOV ECX, [0x1F00]         ; ECX = n
+MOV EDX, [0x1F04]         ; EDX = val
+MOV EBX, 0x00002000       ; EBX = base address of A[]
+MOV EAX, 0                ; EAX = i = 0
+
+outer_loop:
+  CMP EAX, ECX            ; if i >= n: done
+  JGE outer_done
+  MOV ESI, EAX
+  SHL ESI, 2
+  ADD ESI, EBX            ; ESI = &A[i]
+  MOV EDI, [ESI]          ; EDI = A[i]
+  CMP EDI, EDX            ; if A[i] != val: skip to inc_i
+  JNE inc_i
+  ; A[i] == val: shift A[i+1..n-1] left one position
+  MOV ESI, EAX            ; ESI = k = i
+
+inner_loop:
+  MOV EDI, ECX
+  SUB EDI, 1              ; EDI = n - 1
+  CMP ESI, EDI            ; if k >= n-1: stop shifting
+  JGE inner_done
+  PUSH ESI
+  SHL ESI, 2
+  ADD ESI, EBX            ; ESI = &A[k]
+  MOV EDI, [ESI+4]        ; EDI = A[k+1]
+  MOV [ESI], EDI          ; A[k] = A[k+1]
+  POP ESI
+  ADD ESI, 1              ; k++
+  JMP inner_loop
+
+inner_done:
+  SUB ECX, 1              ; n-- (element removed)
+  JMP outer_loop          ; do NOT increment i: recheck same position
+
+inc_i:
+  ADD EAX, 1              ; i++
+  JMP outer_loop
+
+outer_done:
+  MOV [0x1F00], ECX       ; store updated n

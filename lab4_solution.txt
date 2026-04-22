@@ -1,0 +1,63 @@
+; Lab 4: Nested Procedure Call - Linked List Node Insertion
+; Each node is 8 bytes: [addr+0]=value (i32), [addr+4]=next (0=NULL)
+;
+; Register setup at start:
+;   EBX = head    (address of first node)
+;   ESI = newNode (address of node to insert)
+;   ECX = n       (0=before 1st, 1=after 1st, 2=after 2nd, ...)
+; Result: EAX = value of newly inserted node
+;
+; Call tree: main -> addNode -> findNode
+; Use CALL/RET and PUSH/POP across all procedure calls.
+
+; -- main ----------------------------------------------------------
+CALL addNode          ; call addNode(EBX=head, ECX=n, ESI=newNode)
+JMP lab4_end          ; EAX = value of newly inserted node
+
+; -- addNode -------------------------------------------------------
+; Inputs:  EBX=head, ECX=n, ESI=newNode
+; Output:  EAX = newNode->value
+addNode:
+  CMP ECX, 0
+  JNE addNode_else
+
+  ; n == 0: insert newNode before the current head
+  MOV [ESI+4], EBX    ; newNode->next = head
+  MOV EBX, ESI        ; EBX = newNode (update head)
+  MOV EAX, [ESI]      ; EAX = newNode->value
+  RET
+
+addNode_else:
+  ; n > 0: find the nth node, then splice newNode in
+  PUSH ESI             ; save newNode across the nested CALL
+  CALL findNode        ; EAX = addr1 (nth node),  EDX = addr2 ((n+1)th)
+  POP ESI              ; restore newNode
+
+  MOV [EAX+4], ESI    ; addr1->next = newNode
+  MOV [ESI+4], EDX    ; newNode->next = addr2
+  MOV EAX, [ESI]      ; EAX = newNode->value
+  RET
+
+; -- findNode ------------------------------------------------------
+; Inputs:  EBX=head, ECX=n
+; Output:  EAX=addr1 (nth node),  EDX=addr2 ((n+1)th node or 0)
+findNode:
+  MOV EAX, EBX        ; curr = head
+  MOV EDI, 1          ; i = 1
+
+findNode_loop:
+  CMP EDI, ECX        ; if i >= n: stop
+  JGE findNode_done
+  MOV EDX, [EAX+4]    ; next = curr->next
+  CMP EDX, 0          ; if next == NULL: end of list
+  JE  findNode_done
+
+  MOV EAX, EDX        ; curr = next
+  ADD EDI, 1          ; i++
+  JMP findNode_loop
+
+findNode_done:
+  MOV EDX, [EAX+4]    ; addr2 = curr->next
+  RET
+
+lab4_end:

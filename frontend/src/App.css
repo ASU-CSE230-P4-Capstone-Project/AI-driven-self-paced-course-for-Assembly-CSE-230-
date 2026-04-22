@@ -1,0 +1,150 @@
+ #root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  color: #213547;
+  background-color: #ffffff;
+  color-scheme: light;
+  height: 100%;
+  margin: 0;
+}
+
+html, body { height: 100%; margin: 0 }
+
+button { border-radius: 8px; border: 1px solid transparent; padding: 0.45rem 0.9rem; background: #f3f4f6; cursor: pointer }
+button:hover { border-color: #646cff }
+button:focus-visible { outline: 4px auto -webkit-focus-ring-color }
+
+h1, h2, h3 { margin: 0 }
+a { color: #646cff; text-decoration:none }
+
+.editor:focus-visible,
+textarea.editor:focus-visible {
+  outline: none;
+}
+
+.editor {
+  line-height: 18px; 
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.copy-btn {
+  margin-left: auto;
+}
+
+.console-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-wrap {
+  display: grid;
+  grid-template-columns: var(--editor-gutter-width, 60px) 1fr;
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+.gutter {
+  overflow: hidden;
+  user-select: none;
+  background: #d2d6da;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  font-family: monospace;
+  font-size: var(--editor-gutter-font-size, 12px);
+  padding-top: var(--editor-gutter-top-padding, 12px);
+}
+
+.gutter-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--editor-line-height, 18px);
+  min-height: 18px;
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+.gutter-line.non-executable {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.gutter-line.non-executable .bp-dot {
+  visibility: hidden;
+}
+
+.bp-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.35);
+  opacity: 0.35;
+}
+
+.bp-dot.on {
+  opacity: 1;
+  border-color: transparent;
+  background: #ff4d4d;
+}
+
+.line-no {
+  opacity: 0.6;
+  min-width: var(--editor-line-no-width, 24px);
+  text-align: right;
+}
+
+.gutter-line.current-line {
+  background: rgba(255, 255, 0, 0.15);
+}
+
+.gutter-line.break-hit {
+  background: rgba(255, 0, 0, 0.35);
+}
+
+.gutter-line.break-hit .bp-dot {
+  background: red;
+  box-shadow: 0 0 6px red;
+}
+
+.debugbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid #5e1724;
+  background: #7b1f2f;
+}
+
+.debugbar button {
+  padding: 0.32rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.07);
+  color: white;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: background 0.15s;
+}
+
+.debugbar button:hover { background: rgba(255,255,255,0.15) }
+
+.nav-doc-title {
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0 16px;
+  margin-top: 12px;
+  color: #ffffff;
+}
+
+.nav-doc-body {
+  padding: 16px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  color: #ffffff;
+}

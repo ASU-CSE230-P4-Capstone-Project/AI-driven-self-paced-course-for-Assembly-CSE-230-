@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "esbuild": "^0.25.10",
+    "rollup": "^4.52.4"
+  },
+  "dependencies": {
+    "react-router-dom": "^7.13.0"
+  }
+}

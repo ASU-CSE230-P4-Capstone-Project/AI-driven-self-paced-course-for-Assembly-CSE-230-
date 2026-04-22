@@ -1,0 +1,38 @@
+; Lab 1: ALU and Data Transfer Instructions
+; Array A[] is at base address 0x2000
+;   A[0] = [0x2000], A[1] = [0x2004], A[2] = [0x2008]
+;   A[3] = [0x200C], A[4] = [0x2010], A[5] = [0x2014]
+
+MOV EBX, 0x00002000       ; EBX = base address of A[]
+
+; Step 1: unsigned multiply {A[3], A[2]} = A[1] * A[0]
+MOV EAX, [EBX]            ; EAX = A[0]
+MOV ECX, [EBX+4]          ; ECX = A[1]
+MUL ECX                   ; EDX:EAX = EAX * ECX (unsigned)
+MOV [EBX+8],  EAX         ; A[2] = low 32 bits
+MOV [EBX+12], EDX         ; A[3] = high 32 bits
+
+; Step 2: A[4] = A[2] / 230,  a (EDX) = A[2] % 230
+MOV EAX, [EBX+8]          ; EAX = A[2]
+CDQ                        ; sign-extend EAX into EDX:EAX
+MOV ECX, 230
+IDIV ECX                  ; EAX = quotient, EDX = remainder (a)
+MOV [EBX+16], EAX         ; A[4]
+
+; Step 3: b = (char)(a >> 16), c = (char)(a & 8), d = (short)(a << 2)
+; EDX holds 'a' here
+MOV EAX, EDX              ; EAX = a (for b)
+SAR EAX, 16               ; arithmetic shift right 16
+AND EAX, 0x000000FF       ; b = low byte (char truncation)
+MOV ECX, EDX              ; ECX = a (for c)
+AND ECX, 8                ; c = a & 8
+MOV ESI, EDX              ; ESI = a (for d)
+SHL ESI, 2                ; d = a << 2
+AND ESI, 0x0000FFFF       ; d = short truncation
+
+; Step 4: A[5] = {b, c, d} packed into 32 bits
+SHL EAX, 24               ; b in bits 31-24
+SHL ECX, 16               ; c in bits 23-16
+OR  EAX, ECX
+OR  EAX, ESI
+MOV [EBX+20], EAX         ; A[5]
