@@ -1,0 +1,90 @@
+; Lab 3: Single Procedure Call - Compute B[i] = A[i]^i
+; Memory layout:
+;   [0x1F00] = n1  (length of array A)
+;   [0x1F04] = n2  (length of array B, store on completion)
+;   Array A[] at 0x2000, Array B[] at 0x3000
+;
+; Call tree: main -> exponent, main -> append
+;
+; Register use in main:
+;   ECX = n1  (array length)
+;   EBX = base of A[]
+;   EDI = base of B[]
+;   ESI = j   (loop index, also used as n2 when calling append)
+; exponent(EBX=x, ECX=y) -> EAX = x^y
+; append(EDI=B_base, ESI=n2, EAX=value) -> stores value at B[n2]
+
+; ── main ────────────────────────────────────────────────────────────
+MOV ECX, [0x1F00]         ; ECX = n1
+MOV EBX, 0x00002000       ; EBX = base of A[]
+MOV EDI, 0x00003000       ; EDI = base of B[]
+
+; B[0] = 1  (A[0]^0 = 1 for any A[0])
+MOV EAX, 1
+MOV [EDI], EAX
+
+MOV ESI, 1                ; j = 1
+
+main_loop:
+  CMP ESI, ECX            ; if j >= n1: done
+  JGE main_done
+
+  ; call exponent(A[j], j): EBX=A[j], ECX=j → EAX = A[j]^j
+  PUSH ECX                ; save n1
+  PUSH ESI                ; save j
+  PUSH EBX                ; save A base
+  PUSH EDI                ; save B base
+  MOV ECX, ESI            ; ECX = j (exponent)
+  SHL ESI, 2
+  ADD ESI, EBX            ; ESI = &A[j]
+  MOV EBX, [ESI]          ; EBX = A[j] (base)
+  CALL exponent           ; EAX = A[j]^j
+  POP EDI                 ; restore B base
+  POP EBX                 ; restore A base
+  POP ESI                 ; restore j
+  POP ECX                 ; restore n1
+
+  ; call append(B_base=EDI, n2=ESI, value=EAX): stores EAX at B[j]
+  CALL append
+
+  ADD ESI, 1              ; j++
+  JMP main_loop
+
+main_done:
+  MOV [0x1F04], ESI       ; store n2 = n1 (ESI == n1 after loop exits)
+  JMP lab3_end            ; skip over procedure bodies
+
+; ── exponent ────────────────────────────────────────────────────────
+; Inputs:  EBX = x (base), ECX = y (exponent, >= 0)
+; Output:  EAX = x^y  (wrapping 32-bit multiplication)
+; Preserves: EBX, ECX
+exponent:
+  PUSH EBX                ; save x
+  PUSH ECX                ; save y
+  MOV EAX, 1             ; result = 1
+  CMP ECX, 0
+  JLE exp_done            ; y == 0: return 1
+exp_loop:
+  CMP ECX, 0
+  JLE exp_done
+  IMUL EAX, EBX          ; result *= x
+  SUB ECX, 1
+  JMP exp_loop
+exp_done:
+  POP ECX                 ; restore y
+  POP EBX                 ; restore x
+  RET
+
+; ── append ──────────────────────────────────────────────────────────
+; Inputs:  EDI = B base address, ESI = index n2, EAX = value to store
+; Output:  stores value at B[n2]
+; Preserves: ESI
+append:
+  PUSH ESI
+  SHL ESI, 2              ; ESI = n2 * 4 (byte offset)
+  ADD ESI, EDI            ; ESI = &B[n2]
+  MOV [ESI], EAX          ; B[n2] = value
+  POP ESI
+  RET
+
+lab3_end:

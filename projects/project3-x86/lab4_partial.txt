@@ -1,0 +1,45 @@
+; Lab 4: Partial solution - n>0 only (fails n=0 test)
+; Passes tests 1, 3, 4 => 15/30 automated
+
+; -- main ----------------------------------------------------------
+CALL addNode
+JMP lab4_end
+
+; -- addNode -------------------------------------------------------
+addNode:
+  CMP ECX, 0
+  JNE addNode_else
+
+  ; n == 0: NOT IMPLEMENTED - just return without splicing
+  RET
+
+addNode_else:
+  PUSH ESI
+  CALL findNode
+  POP ESI
+
+  MOV [EAX+4], ESI    ; addr1->next = newNode
+  MOV [ESI+4], EDX    ; newNode->next = addr2
+  MOV EAX, [ESI]      ; EAX = newNode->value
+  RET
+
+; -- findNode ------------------------------------------------------
+findNode:
+  MOV EAX, EBX
+  MOV EDI, 1
+
+findNode_loop:
+  CMP EDI, ECX
+  JGE findNode_done
+  MOV EDX, [EAX+4]
+  CMP EDX, 0
+  JE  findNode_done
+  MOV EAX, EDX
+  ADD EDI, 1
+  JMP findNode_loop
+
+findNode_done:
+  MOV EDX, [EAX+4]
+  RET
+
+lab4_end:

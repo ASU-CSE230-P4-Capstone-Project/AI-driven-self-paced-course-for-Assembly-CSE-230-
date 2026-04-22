@@ -1,0 +1,106 @@
+; Lab 5: Recursive Procedure Call – Shift and Add Multiplication
+; Register setup:
+;   EBX = multiplicand   (preserved on return)
+;   ECX = multiplier     (preserved on return)
+; Result:
+;   EAX = product (EBX * ECX)
+;
+; Call tree: [main] -> multiply -> recursion (recursive)
+; Uses shift-and-add algorithm: checks each bit of m, adds md if set,
+; then shifts m right and md left for the next bit.
+
+CALL multiply
+JMP lab5_end
+
+; -- multiply -------------------------------------------------------
+; Inputs:  EBX=multiplicand, ECX=multiplier (both preserved)
+; Output:  EAX = product
+multiply:
+  PUSH EBX              ; save original multiplicand
+  PUSH ECX              ; save original multiplier
+
+  ; Determine sign_p: 1 if exactly one input is negative
+  MOV EDI, 0            ; sign_p = 0
+  CMP EBX, 0
+  JGE mul_md_pos        ; md >= 0: check m separately
+  CMP ECX, 0
+  JGE mul_set_sign      ; md < 0, m >= 0 -> different signs
+  JMP mul_sign_done     ; md < 0, m < 0 -> same signs (positive result)
+
+mul_md_pos:
+  CMP ECX, 0
+  JGE mul_sign_done     ; both >= 0 -> same signs
+
+mul_set_sign:
+  MOV EDI, 1            ; exactly one negative -> sign_p = 1
+
+mul_sign_done:
+  ; Make EBX (md) positive
+  CMP EBX, 0
+  JGE mul_m_check
+  MOV ESI, 0
+  SUB ESI, EBX
+  MOV EBX, ESI          ; EBX = -EBX
+
+mul_m_check:
+  ; Make ECX (m) positive
+  CMP ECX, 0
+  JGE mul_call
+  MOV ESI, 0
+  SUB ESI, ECX
+  MOV ECX, ESI          ; ECX = -ECX
+
+mul_call:
+  MOV EAX, 0            ; p = 0
+  MOV EDX, 16           ; n = 16 (16-bit numbers, 16 recursive steps)
+  CALL recursion        ; EAX = product of |md| * |m|
+
+  ; Negate result if sign_p = 1
+  CMP EDI, 0
+  JE mul_done
+  MOV ESI, 0
+  SUB ESI, EAX
+  MOV EAX, ESI          ; EAX = -EAX
+
+mul_done:
+  POP ECX               ; restore original multiplier
+  POP EBX               ; restore original multiplicand
+  RET
+
+lab5_end:
+  JMP lab5_end          ; halt: loop forever so execution never falls into recursion
+
+; -- recursion ------------------------------------------------------
+; Inputs:  EAX=p, EBX=md, ECX=m, EDX=n
+; Output:  EAX = updated product
+; Base case: n == 0 -> return p (EAX unchanged)
+; Step:      if (m & 1) == 1: p += md
+;            m >>= 1, md <<= 1, n--
+;            recurse with updated values
+recursion:
+  CMP EDX, 0
+  JE rec_done           ; base case: n == 0, return EAX as-is
+
+  ; Check LSB of m: if m & 1 == 1, add md to p
+  MOV ESI, ECX
+  AND ESI, 1            ; ESI = least significant bit of m
+  CMP ESI, 0
+  JE rec_shift          ; LSB is 0, skip add
+  ADD EAX, EBX          ; p += md (LSB is 1)
+
+rec_shift:
+  SHR ECX, 1            ; m >>= 1  (logical right shift)
+  SHL EBX, 1            ; md <<= 1
+  SUB EDX, 1            ; n--
+
+  ; Save registers across the recursive call
+  PUSH EBX
+  PUSH ECX
+  PUSH EDX
+  CALL recursion        ; recursive call with updated p, md, m, n
+  POP EDX
+  POP ECX
+  POP EBX
+
+rec_done:
+  RET
