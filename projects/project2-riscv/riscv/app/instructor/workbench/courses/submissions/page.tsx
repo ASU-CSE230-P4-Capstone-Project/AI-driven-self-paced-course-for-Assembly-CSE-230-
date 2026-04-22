@@ -1,0 +1,12 @@
+'use client';
+
+import { Suspense } from 'react';
+import StaffLabSubmissionsPage from '@/components/staff-lab-submissions-page';
+
+export default function InstructorWorkbenchCourseSubmissionsPage() {
+  return (
+    <Suspense fallback={null}>
+      <StaffLabSubmissionsPage variant="instructor-workbench" />
+    </Suspense>
+  );
+}

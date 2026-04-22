@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+.riscv-current-line {
+  background-color: rgba(255, 200, 0, 0.15);
+  border-left: 3px solid #ffb700;
+}
+
+.riscv-line-gutter {
+  border-left: 3px solid #ffb700 !important;
+}
+
+.instructor-shell input::placeholder,
+.instructor-shell textarea::placeholder,
+.ta-shell input::placeholder,
+.ta-shell textarea::placeholder {
+  color: #6b7280;
+  opacity: 1;
+}
