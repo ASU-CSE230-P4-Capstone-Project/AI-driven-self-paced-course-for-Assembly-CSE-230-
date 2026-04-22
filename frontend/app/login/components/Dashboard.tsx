@@ -7,6 +7,7 @@ import { Button } from './ui/button';
 import { LogOut } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Settings } from "lucide-react";
+import { ProjectsPortal } from "./ProjectsPortal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
@@ -289,6 +290,10 @@ export function Dashboard() {
             Welcome back, {user?.name ?? user?.email ?? 'Student'}!
           </h2>
           <p className="text-gray-600">Continue your mastery-based learning journey</p>
+        </div>
+
+        <div className="mb-10">
+          <ProjectsPortal variant="student" />
         </div>
 
         {/* Canvas connection */}

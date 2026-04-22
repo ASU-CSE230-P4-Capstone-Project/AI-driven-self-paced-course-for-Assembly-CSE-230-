@@ -1,0 +1,11 @@
+services:
+  project3:
+    build:
+      context: ../../../../projects/project3-x86
+    container_name: cse230_p3
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:21003:3000"
+

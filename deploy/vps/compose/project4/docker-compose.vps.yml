@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:15
+    container_name: cse230_p4_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cse230
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - p4_db_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:25432:5432"
+
+  backend:
+    build:
+      context: ../../../..
+      dockerfile: backend/Dockerfile
+    container_name: cse230_p4_backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/cse230
+
+      # Canvas integration (Project 4)
+      CANVAS_BASE_URL: https://canvas.asu.edu
+      USER_ACCESS_TOKEN: REPLACE_ME
+      COURSE_ID: REPLACE_ME
+
+      # Optional: seed demo modules only when explicitly enabled
+      SEED_MODULES: "false"
+    ports:
+      - "127.0.0.1:28000:8000"
+
+  frontend:
+    build:
+      context: ../../../..
+      dockerfile: frontend/Dockerfile
+    container_name: cse230_p4_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://p4.YOURDOMAIN.COM/api
+      NEXT_PUBLIC_PROJECT1_URL: https://p1.YOURDOMAIN.COM
+      NEXT_PUBLIC_PROJECT2_URL: https://p2.YOURDOMAIN.COM
+      NEXT_PUBLIC_PROJECT3_URL: https://p3.YOURDOMAIN.COM
+    ports:
+      - "127.0.0.1:21004:3000"
+
+volumes:
+  p4_db_data:
+

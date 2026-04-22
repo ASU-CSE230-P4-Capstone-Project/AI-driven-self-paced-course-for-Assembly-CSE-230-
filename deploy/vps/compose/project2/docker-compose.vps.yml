@@ -1,0 +1,23 @@
+services:
+  project2_backend:
+    build:
+      context: ../../../../projects/project2-riscv
+    container_name: cse230_p2_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:25565:25565"
+
+  project2_frontend:
+    build:
+      context: ../../../../projects/project2-riscv
+    container_name: cse230_p2_frontend
+    restart: unless-stopped
+    depends_on:
+      - project2_backend
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:21002:3000"
+

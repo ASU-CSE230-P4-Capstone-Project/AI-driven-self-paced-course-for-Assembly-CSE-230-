@@ -53,9 +53,15 @@ services:
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:8000
+        - NEXT_PUBLIC_PROJECT1_URL=http://localhost:3001
+        - NEXT_PUBLIC_PROJECT2_URL=http://localhost:3002
+        - NEXT_PUBLIC_PROJECT3_URL=http://localhost:5173
     container_name: capstone-frontend
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_PROJECT1_URL=http://localhost:3001
+      - NEXT_PUBLIC_PROJECT2_URL=http://localhost:3002
+      - NEXT_PUBLIC_PROJECT3_URL=http://localhost:5173
     depends_on:
       - backend
     ports:

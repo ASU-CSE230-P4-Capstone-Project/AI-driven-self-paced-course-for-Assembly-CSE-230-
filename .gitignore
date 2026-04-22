@@ -33,3 +33,16 @@ pjenv/
 
 # Local course PDFs (mounted in docker-compose; keep out of git)
 Knowledge Base/
+
+# Local runner artifacts
+.run-logs/
+.venv-p1/
+
+# Vendored projects local envs (keep out of git)
+projects/**/.env
+projects/**/.env.*
+projects/**/.env.local
+projects/**/.env.production
+
+# VPS per-project envs (keep out of git)
+deploy/vps/compose/**/.env

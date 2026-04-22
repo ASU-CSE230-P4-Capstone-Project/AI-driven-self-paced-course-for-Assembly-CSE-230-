@@ -1,0 +1,12 @@
+services:
+  project1:
+    build:
+      context: ../../../../projects/project1-mips
+      dockerfile: Dockerfile
+    container_name: cse230_p1
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:21001:3000"
+

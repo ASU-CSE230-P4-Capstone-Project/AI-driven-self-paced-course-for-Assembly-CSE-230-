@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Dialog, DialogContent } from "./ui/dialog";
 import type { ModuleAnalytics } from "../types/teacher";
 import { MasteryCheckBuilder } from "./MasteryCheckBuilder";
+import { ProjectsPortal } from "./ProjectsPortal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -215,6 +216,10 @@ export function TeacherDashboard() {
         <p className="text-gray-600 mb-6">
           Welcome, {user?.name ?? user?.email ?? "Professor"} — class performance and AI-generated mastery quizzes.
         </p>
+
+        <div className="mb-6">
+          <ProjectsPortal variant="staff" />
+        </div>
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <Button
             type="button"
@@ -317,7 +322,7 @@ export function TeacherDashboard() {
           if (!open) handleCloseStudentsModal();
         }}
       >
-        <DialogContent className="!w-[min(96vw,1400px)] !max-w-[min(96vw,1400px)] max-h-[min(92vh,900px)] overflow-y-auto p-5 sm:p-8">
+        <DialogContent className="w-[min(96vw,1400px)]! max-w-[min(96vw,1400px)]! max-h-[min(92vh,900px)] overflow-y-auto p-5 sm:p-8">
           {selectedModuleName ? (
             <TeacherStudentsList
               variant="modal"
