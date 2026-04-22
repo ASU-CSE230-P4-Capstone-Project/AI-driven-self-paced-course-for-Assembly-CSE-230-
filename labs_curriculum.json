@@ -1,0 +1,488 @@
+{
+  "lab-1-0": {
+    "title": "1.0 Tutorial: Using the MIPS Emulator",
+    "starter_code": "# Tutorial Starter Code\n# Initialize Registers\nli $t0, 10      # Load immediate 10 into $t0\nli $t1, 20      # Load immediate 20 into $t1\n\n# Arithmetic Operation\nadd $t2, $t0, $t1  # $t2 = 10 + 20 = 30\n\n# Memory Operation\nli $s0, 0x10000000 # Load base address\nsw $t2, 0($s0)     # Store 30 into memory at 0x10000000\n\n# End\n# (The emulator stops automatically when instructions run out)\n",
+    "solution_code": "# Tutorial Starter Code\n# Initialize Registers\nli $t0, 10      # Load immediate 10 into $t0\nli $t1, 20      # Load immediate 20 into $t1\n\n# Arithmetic Operation\nadd $t2, $t0, $t1  # $t2 = 10 + 20 = 30\n\n# Memory Operation\nli $s0, 0x10000000 # Load base address\nsw $t2, 0($s0)     # Store 30 into memory at 0x10000000\n\n# End\n# (The emulator stops automatically when instructions run out)\n",
+    "html": "\n<div style=\"max-width: 800px; margin: 0 auto;\">\n  <h3>Welcome to the MIPS Emulator</h3>\n  <p>\n    This environment is designed to help you write, debug, and test MIPS assembly code. \n    Before starting the assignments, please familiarize yourself with the interface controls below.\n  </p>\n\n  <h4>1. The Interface Controls</h4>\n  <ul>\n    <li><strong>Run:</strong> Assembles the code and executes it until completion or error.</li>\n    <li><strong>Step:</strong> Executes the code one line at a time. This is useful for debugging to see how registers change.</li>\n    <li><strong>Stop:</strong> Resets the emulator, clears registers, and wipes memory.</li>\n    <li><strong>Registers Panel:</strong> Shows the current state of the CPU. <br><em>Tip: You can click inside the value box of a register to manually edit it between steps!</em></li>\n    <li><strong>Memory Panel:</strong> Shows the hex and ASCII representation of memory. Use the \"Address\" input and \"Go\" button to jump to specific regions (default is <code>0x10000000</code>).</li>\n  </ul>\n\n  <h4>2. Using Breakpoints</h4>\n  <p>\n    You can pause execution at a specific line without stepping through the whole program manually:\n  </p>\n  <ol>\n    <li>Click the <strong>gutter</strong> (the space to the left of the line numbers) in the code editor.</li>\n    <li>A <span style=\"color:red; font-weight:bold\">red dot</span> will appear.</li>\n    <li>Press <strong>Run</strong>. The program will execute at full speed and pause automatically when it hits that line.</li>\n  </ol>\n\n  <h4>3. Supported Instruction Set</h4>\n  <p>\n    This emulator supports the following subset of the MIPS instruction set. \n    Ensure you only use these instructions in your labs.\n  </p>\n\n  <div class=\"center-table\">\n    <table>\n      <thead>\n        <tr><th>Category</th><th>Instructions</th></tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td><strong>Arithmetic</strong></td>\n          <td>\n            <code>add</code>, <code>addu</code>, <code>sub</code>, <code>subu</code>, \n            <code>addi</code>, <code>addiu</code>, <code>mult</code>, <code>multu</code>, \n            <code>div</code>, <code>divu</code>\n          </td>\n        </tr>\n        <tr>\n          <td><strong>Logical</strong></td>\n          <td>\n            <code>and</code>, <code>andi</code>, <code>or</code>, <code>ori</code>, \n            <code>xor</code>, <code>xori</code>, <code>nor</code>\n          </td>\n        </tr>\n        <tr>\n          <td><strong>Data Transfer</strong></td>\n          <td>\n            <code>lw</code> (load word), <code>sw</code> (store word), <br>\n            <code>lb</code> (load byte), <code>sb</code> (store byte), <br>\n            <code>lh</code> (load half), <code>sh</code> (store half), <br>\n            <code>lui</code> (load upper imm), <code>mfhi</code>, <code>mflo</code>\n          </td>\n        </tr>\n        <tr>\n          <td><strong>Branch & Jump</strong></td>\n          <td>\n            <code>beq</code>, <code>bne</code>, <code>j</code>, <code>jal</code>, <code>jr</code>\n          </td>\n        </tr>\n        <tr>\n          <td><strong>Comparison (Set)</strong></td>\n          <td>\n            <code>slt</code>, <code>slti</code>, <code>sltiu</code>, <code>sltu</code>\n          </td>\n        </tr>\n        <tr>\n          <td><strong>Shifting</strong></td>\n          <td>\n            <code>sll</code> (shift left logical), <br>\n            <code>srl</code> (shift right logical), <br>\n            <code>sra</code> (shift right arithmetic)\n          </td>\n        </tr>\n        <tr>\n          <td><strong>Pseudo-Instructions</strong></td>\n          <td>\n            <code>li</code> (load immediate), <br>\n            <code>la</code> (load address), <br>\n            <code>move</code> (copy register), <br>\n            <code>blt</code>, <code>bgt</code>, <code>ble</code>, <code>bge</code> (branch comparisons)\n          </td>\n        </tr>\n      </tbody>\n    </table>\n  </div>\n\n  <h4>4. Tutorial Exercise</h4>\n  <p>\n    To complete this tutorial lab, follow these steps:\n  </p>\n  <ol>\n    <li>Review the code in the <strong>Assembler</strong> panel.</li>\n    <li>Click the <strong>Step</strong> button repeatedly to watch <code>$t0</code>, <code>$t1</code>, and <code>$t2</code> change.</li>\n    <li>Observe the <strong>Memory</strong> panel. After the <code>sw</code> instruction executes, the value <code>30</code> (hex <code>1E</code>) will appear at address <code>0x10000000</code>.</li>\n    <li>Check the <strong>Test Cases</strong> below to see if your execution matches the requirements.</li>\n  </ol>\n</div>\n",
+    "testCases": [
+      {
+        "name": "Tutorial Check: Register Values",
+        "points": 5,
+        "initialRegisters": {},
+        "expectedRegisters": {
+          "$t0": 10,
+          "$t1": 20,
+          "$t2": 30,
+          "$s0": 268435456
+        }
+      },
+      {
+        "name": "Tutorial Check: Memory Storage",
+        "points": 5,
+        "initialRegisters": {},
+        "expectedMemory": {
+          "268435456": 30
+        }
+      }
+    ]
+  },
+  "lab-12-2": {
+    "title": "12.2 LAB: Arithmetic expression - add/sub",
+    "starter_code": "",
+    "solution_code": "add $t0, $s0, $s1\nadd $t0, $t0, $s2\nsub $s4, $t0, $s3\n",
+    "html": "\n<p style=\"text-align:center\">\n  Given the mapping of registers to variables below, write a program to implement the following expression:\n</p>\n<p style=\"text-align:center;font-weight:bold\">\n  Z = A + B + C - D\n</p>\n\n<p style=\"text-align:center; font-weight:600;\">\n  Use only <code>$t0</code> as a temporary register during implementation.\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Variables</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>A</td></tr>\n      <tr><td>$s1</td><td>B</td></tr>\n      <tr><td>$s2</td><td>C</td></tr>\n      <tr><td>$s3</td><td>D</td></tr>\n      <tr><td>$s4</td><td>Z</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p class=\"lesson-example\">\n  Assume the registers are initialized as follows. When your program finishes, the value in <code>$s4</code> should hold <code>Z</code>.\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Register</th><th>Initial value</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0 (A)</td><td>2</td></tr>\n      <tr><td>$s1 (B)</td><td>4</td></tr>\n      <tr><td>$s2 (C)</td><td>6</td></tr>\n      <tr><td>$s3 (D)</td><td>3</td></tr>\n      <tr><td>$s4 (Z)</td><td>?</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p class=\"lesson-example\">\n  Hint: Think of this as <code>Z = ((A + B) + C) - D</code> and build it up in <code>$t0</code> one step at a time.\n</p>\n",
+    "testCases": [
+      {
+        "name": "Test 1: Compare storage (4 points)",
+        "points": 4,
+        "initialRegisters": {
+          "$s0": 2,
+          "$s1": 4,
+          "$s2": 6,
+          "$s3": 5
+        },
+        "expectedRegisters": {
+          "$t0": 12,
+          "$s0": 2,
+          "$s1": 4,
+          "$s2": 6,
+          "$s3": 5,
+          "$s4": 7
+        }
+      },
+      {
+        "name": "Test 2: Compare storage (3 points)",
+        "points": 3,
+        "initialRegisters": {
+          "$s0": 1,
+          "$s1": 2,
+          "$s2": 3,
+          "$s3": 10
+        },
+        "expectedRegisters": {
+          "$t0": 6,
+          "$s0": 1,
+          "$s1": 2,
+          "$s2": 3,
+          "$s3": 10,
+          "$s4": -4
+        }
+      },
+      {
+        "name": "Test 3: Compare storage (3 points)",
+        "points": 3,
+        "initialRegisters": {
+          "$s0": 1,
+          "$s1": 1,
+          "$s2": 1,
+          "$s3": 3
+        },
+        "expectedRegisters": {
+          "$t0": 3,
+          "$s0": 1,
+          "$s1": 1,
+          "$s2": 1,
+          "$s3": 3,
+          "$s4": 0
+        }
+      }
+    ]
+  },
+  "lab-12-3": {
+    "title": "12.3 LAB: Arithmetic expression - add/sub/mult",
+    "starter_code": "",
+    "solution_code": "add $t0, $s0, $s1\nsub $t1, $s2, $s3\nmult $t0, $t1\nmflo $s4\n",
+    "html": "\n<p style=\"text-align:center\">\n  Given the mapping of registers to variables below, write a program to implement the following expression:\n</p>\n<p style=\"text-align:center;font-weight:bold\">\n  Z = (A + B) * (C - D)\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Variables</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>A</td></tr>\n      <tr><td>$s1</td><td>B</td></tr>\n      <tr><td>$s2</td><td>C</td></tr>\n      <tr><td>$s3</td><td>D</td></tr>\n      <tr><td>$s4</td><td>Z</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p class=\"lesson-example\">\n  Ex: If the values of <code>$s0</code>, <code>$s1</code>, <code>$s2</code>, and <code>$s3</code> are initialized in the simulator as:\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Register</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>2</td></tr>\n      <tr><td>$s1</td><td>4</td></tr>\n      <tr><td>$s2</td><td>6</td></tr>\n      <tr><td>$s3</td><td>3</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p class=\"lesson-example\">\n  the result is stored in <code>$s4</code>:\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Register</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s4</td><td>18</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p class=\"lesson-example\">\n  <strong>Note:</strong> Use the '+' button under the Registers display to initialize register values for <code>$s0</code>, <code>$s1</code>, <code>$s2</code>, and <code>$s3</code>.\n</p>\n",
+    "testCases": [
+      {
+        "name": "Test 1: Compare storage (4 points)",
+        "points": 4,
+        "initialRegisters": {
+          "$s0": 2,
+          "$s1": 4,
+          "$s2": 6,
+          "$s3": 3
+        },
+        "expectedRegisters": {
+          "$s0": 2,
+          "$s1": 4,
+          "$s2": 6,
+          "$s3": 3,
+          "$s4": 18
+        }
+      },
+      {
+        "name": "Test 2: Compare storage (3 points)",
+        "points": 3,
+        "initialRegisters": {
+          "$s0": 3,
+          "$s1": 6,
+          "$s2": 3,
+          "$s3": 6
+        },
+        "expectedRegisters": {
+          "$s0": 3,
+          "$s1": 6,
+          "$s2": 3,
+          "$s3": 6,
+          "$s4": -27
+        }
+      },
+      {
+        "name": "Test 3: Compare storage (3 points)",
+        "points": 3,
+        "initialRegisters": {
+          "$s0": 5,
+          "$s1": 5,
+          "$s2": 5,
+          "$s3": 5
+        },
+        "expectedRegisters": {
+          "$s0": 5,
+          "$s1": 5,
+          "$s2": 5,
+          "$s3": 5,
+          "$s4": 0
+        }
+      }
+    ]
+  },
+  "lab-12-11": {
+    "title": "12.11 LAB: Arithmetic Expressions",
+    "starter_code": "add $t1, $s1, $s3\n\naddi $t0, $zero, 13\nlw $t0, 0($t0)\n\nsub $t1, $s4, $s2\nsub $t2, $s5, $s1\nadd $t1, $t1, $t2\n\nadd $s0, $t0, $t1\n",
+    "solution_code": "# Enter your code here. Include comments wherever necessary.\n\nadd $t1, $s1, $s3\nsub $t2, $s5, $s7\nsub $t0, $t1, $t2\n\nsub $t1, $s4, $s2\nadd $t1, $t1, $s6\nsub $t2, $s5, $s1\nadd $t1, $t1, $t2\n\nadd $s0, $t0, $t1\n",
+    "html": "\n<p style=\"text-align:center\">\n  Given the mapping of registers to variables below, write a program to implement the following expression:\n</p>\n\n<p style=\"text-align:center;font-weight:bold\">\n  y = ((x1 + x3) - (x5 - x7)) + ((x4 - x2 + x6) + (x5 - x1))\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Variables</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>y</td></tr>\n      <tr><td>$s1</td><td>x1</td></tr>\n      <tr><td>$s2</td><td>x2</td></tr>\n      <tr><td>$s3</td><td>x3</td></tr>\n      <tr><td>$s4</td><td>x4</td></tr>\n      <tr><td>$s5</td><td>x5</td></tr>\n      <tr><td>$s6</td><td>x6</td></tr>\n      <tr><td>$s7</td><td>x7</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p style=\"text-align:center\">\n  You may use any temporary registers from <code>$t0</code> to <code>$t9</code>.\n  Clearly specify your choice of registers using comments.\n</p>\n\n<p style=\"text-align:center\">\n  Important: Do not simplify the expression.\n</p>\n\n<p class=\"lesson-example\">\n  Example test: If the values of <code>$s1</code> through <code>$s7</code> are initialized in the simulator as:\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Register</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s1</td><td>4</td></tr>\n      <tr><td>$s2</td><td>6</td></tr>\n      <tr><td>$s3</td><td>5</td></tr>\n      <tr><td>$s4</td><td>2</td></tr>\n      <tr><td>$s5</td><td>-3</td></tr>\n      <tr><td>$s6</td><td>-1</td></tr>\n      <tr><td>$s7</td><td>0</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p class=\"lesson-example\">\n  the result is stored in $s0:\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Register</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>0</td></tr>\n      <tr><td>$s1</td><td>4</td></tr>\n      <tr><td>$s2</td><td>6</td></tr>\n      <tr><td>$s3</td><td>5</td></tr>\n      <tr><td>$s4</td><td>2</td></tr>\n      <tr><td>$s5</td><td>-3</td></tr>\n      <tr><td>$s6</td><td>-1</td></tr>\n      <tr><td>$s7</td><td>0</td></tr>\n    </tbody>\n  </table>\n</div>\n",
+    "testCases": [
+      {
+        "name": "Test 1: Compare storage (5 points)",
+        "points": 5,
+        "initialRegisters": {
+          "$s1": 4,
+          "$s2": 6,
+          "$s3": 5,
+          "$s4": 2,
+          "$s5": -3,
+          "$s6": -1,
+          "$s7": 0
+        },
+        "expectedRegisters": {
+          "$s0": 0,
+          "$s1": 4,
+          "$s2": 6,
+          "$s3": 5,
+          "$s4": 2,
+          "$s5": -3,
+          "$s6": -1,
+          "$s7": 0
+        }
+      },
+      {
+        "name": "Test 2: Compare storage (5 points)",
+        "points": 5,
+        "initialRegisters": {
+          "$s1": 3,
+          "$s2": 4,
+          "$s3": 0,
+          "$s4": 6,
+          "$s5": -4,
+          "$s6": -1,
+          "$s7": 8
+        },
+        "expectedRegisters": {
+          "$s0": 9,
+          "$s1": 3,
+          "$s2": 4,
+          "$s3": 0,
+          "$s4": 6,
+          "$s5": -4,
+          "$s6": -1,
+          "$s7": 8
+        }
+      },
+      {
+        "name": "Test 3: Compare storage (5 points)",
+        "points": 5,
+        "initialRegisters": {
+          "$s1": 0,
+          "$s2": -10,
+          "$s3": 10,
+          "$s4": -15,
+          "$s5": 15,
+          "$s6": 5,
+          "$s7": 20
+        },
+        "expectedRegisters": {
+          "$s0": 30,
+          "$s1": 0,
+          "$s2": -10,
+          "$s3": 10,
+          "$s4": -15,
+          "$s5": 15,
+          "$s6": 5,
+          "$s7": 20
+        }
+      }
+    ]
+  },
+  "lab-12-12": {
+    "title": "12.12 Zylab 1 - ALU and Data Transfer Instructions",
+    "starter_code": "",
+    "solution_code": "lw $t0, 0($s0) # A[0]\nlw $t1, 4($s0) # A[1]\n\nmult $t0, $t1\nmflo $t2\nmfhi $t3\n\nsw $t2, 16($s0)\nsw $t3, 8($s0)\n\naddi $t5, $zero, 230\ndiv $t2, $t5\nmflo $t4\nmfhi $t5\n\nsw $t4, 20($s0)\n\nsrl $t6, $t5, 16\nandi $t7, $t5, 8\nori $t8, $t6, 3\nor $t7, $t7, $t8\nsll $t9, $t5, 2\n\nsh $t9, 24($s0)\nsb $t7, 26($s0)\nsb $t6, 27($s0)\n\n# A[3] = (A[0] + A[1] - 100) - (A[2] + A[4] - A[5]);\n\nadd $t5, $t0, $t1\naddi $t5, $t5, -100\nadd $t6, $t3, $t2\nsub $t6, $t6, $t4\nsub $t6, $t5, $t6\n\nsw $t6, 12($s0)\n",
+    "html": "\n<p>\n  Given an array of 2 integers, write a MIPS program to implement some ALU operations and store\n  the results back to memory. The C code below shows how the elements are appended to the array:\n</p>\n\n<pre>\n// Declaration of variables\nint* A;       // Integer array A with the base address pointing to variable A\nint a;\nchar b, c;\nshort d;\n\n// Append array elements\n{ A[2], A[4] } = A[1] * A[0];              // {} = concatenation/append. 64-bit product stored in Array\nA[5] = A[4] / 230;\na = A[4] % 230;\nb = a >> 16;                                // '>>' = right shift\nc = (a & 0b'1000) | (b | 0b'0011);          // '&' = bit-wise and\nd = a << 2;                                 // '<<' = left shift\nA[6] = {b, c, d};                          // {} = concatenation/append. Use Memory Operations\nA[3] = (A[0] + A[1] - 100) - (A[2] + A[4] - A[5]);\n</pre>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Variables</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>A</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>A[0]</td></tr>\n      <tr><td>$s0+4</td><td>A[1]</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>\n  You may use any temporary registers from <code>$t0</code> to <code>$t9</code> or saved\n  registers from <code>$s1</code> to <code>$s7</code>. Clearly specify your choice of\n  registers and explain your code using comments.\n</p>\n\n<p class=\"lesson-example\">\n  Example Test: If the value of <code>$s0</code> and Memory are initialized in the simulator as below:\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>8016</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>8016</td><td>-5</td></tr>\n      <tr><td>8020</td><td>8</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>The resultant array is:</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>8016</td><td>-5</td></tr>\n      <tr><td>8020</td><td>8</td></tr>\n      <tr><td>8024</td><td>7</td></tr>\n      <tr><td>8028</td><td>-64</td></tr>\n      <tr><td>8032</td><td>-4</td></tr>\n      <tr><td>8036</td><td>0</td></tr>\n      <tr><td>8040</td><td>-160</td></tr>\n    </tbody>\n  </table>\n</div>\n",
+    "testCases": [
+      {
+        "name": "Test 1: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 4000 },
+        "initialMemory": { "4000": 4, "4004": 5 },
+        "expectedRegisters": { "$s0": 4000 },
+        "expectedMemory": { "4000": 4, "4004": 5, "4008": 0, "4012": -111, "4016": 20, "4020": 0, "4024": 196688 }
+      },
+      {
+        "name": "Test 2: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 13804 },
+        "initialMemory": { "13804": -8, "13808": -4 },
+        "expectedRegisters": { "$s0": 13804 },
+        "expectedMemory": { "13804": -8, "13808": -4, "13812": 0, "13816": -144, "13820": 32, "13824": 0, "13828": 196736 }
+      },
+      {
+        "name": "Test 3: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 8016 },
+        "initialMemory": { "8016": -5, "8020": 8 },
+        "expectedRegisters": { "$s0": 8016 },
+        "expectedMemory": { "8016": -5, "8020": 8, "8024": -1, "8028": -56, "8032": -40, "8036": 0, "8040": -160 }
+      },
+      {
+        "name": "Test 4: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 2304 },
+        "initialMemory": { "2304": 5, "2308": -8 },
+        "expectedRegisters": { "$s0": 2304 },
+        "expectedMemory": { "2304": 5, "2308": -8, "2312": -1, "2316": -62, "2320": -40, "2324": 0, "2328": -160 }
+      }
+    ]
+  },
+  "lab-12-13": {
+    "title": "12.13 Zylab 2 - Loops (Conditional and Unconditional Branch Instructions)",
+    "starter_code": "",
+    "solution_code": "Main:          addi $t1, $zero, 0       # i = 0\n               addi $s2, $s1, -1\nfirst_loop:    bge $t1, $s1, Exit       # if i >= size exit\n               sll $t3, $t1, 2            # i*4\n               add $t3, $s0, $t3           # address of Array[i]\n               lw $t4, 0($t3)               # value of Array[i]\n               addi $t2, $t1, 1            # j = i + 1\nsecond_loop:   bge $t2, $s1, end_while     # if j >= size end second loop\narray_val:     sll $t3, $t2, 2            # j*4\n               add $t3, $s0, $t3           # address of Array[j]\n               lw $t5, 0($t3)               # value of Array[j]\ncompare:       beq $t4, $t5, for_start     # if Array[i] = Array[j] enter for loop\n               addi $t2, $t2, 1            # j ++ if values unequal\n               j second_loop\nfor_start:     addi $t8, $t2, 0            # k = j\nfor_loop:      bge $t8, $s2, end_for     # if k >= size end for loop\n               sll $t9, $t8, 2            # k*4\n               add $t9, $s0, $t9           # address of Array[k]\n               lw $t7, 4($t9)               # Value of Array[k+1]\n               sw $t7, 0($t9)               # write to Array[k]\n               addi $t8, $t8,1            # k ++\n               j for_loop\nend_for:       addi $s1, $s1, -1           # size -- if duplicate found\n               addi $s2, $s1, -1\n               j second_loop\nend_while:     addi $t1, $t1, 1            # i ++\n               j first_loop\nExit:\n",
+    "html": "\n<p>\n  To save some space in Memory, I would like to remove duplicate data, for example duplicate\n  student ID numbers. Towards this, let us consider an array which may contain duplicates. Here\n  we will consider the data to be small integers. The same code can be used for large integer\n  values.\n</p>\n\n<p>Given an array (base address and number of elements), write a MIPS program to do the following:</p>\n<ul>\n  <li>delete all duplicate elements.</li>\n  <li>final array should contain unique integers only.</li>\n  <li>the size of the array should be updated after deleting duplicates.</li>\n</ul>\n\n<p>\n  Below is an example of the C code segment to perform the above task. You may use a different\n  code, but you have to write the code that you use as a comment before the MIPS code.\n</p>\n\n<pre>\n// Declaration of variables\nint* Array;       // Base address of array A\nint size;         // Length of the array A\nint i, j, k;      // Given value to be removed from array\n\n// Remove elements equal to val\ni = 0;\nwhile (i < size) {\n    j = i + 1;\n    while(j < size)  {\n        if(Array[i] == Array[j]){\n            for (k = j; k < size-1; k++)  {       // Shift elements if element is less than value\n                Array[k] = Array[k+1];\n            }\n            size = size - 1;                      // if element deleted, length of array decreases\n        }\n        else\n            j ++;\n    }\n    i ++;\n}\n</pre>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Variables</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>Array</td></tr>\n      <tr><td>$s1</td><td>size</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>Array[0]</td></tr>\n      <tr><td>$s0+4</td><td>Array[1]</td></tr>\n      <tr><td>$s0+8</td><td>Array[2]</td></tr>\n      <tr><td>…</td><td>…</td></tr>\n      <tr><td>$s0+4*(size-1)</td><td>Array[n-1]</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>\n  You may use any temporary registers from <code>$t0</code> to <code>$t9</code> or saved\n  registers from <code>$s2</code> to <code>$s7</code>. Clearly specify your choice of\n  registers and explain your code using comments.\n</p>\n\n<p class=\"lesson-example\">\n  Example Test: If the values of <code>$s0</code> through <code>$s1</code> and array elements\n  are initialized in the simulator as:\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>4000</td></tr>\n      <tr><td>$s1</td><td>10</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>4000</td><td>4</td></tr>\n      <tr><td>4004</td><td>8</td></tr>\n      <tr><td>4008</td><td>-13</td></tr>\n      <tr><td>4012</td><td>8</td></tr>\n      <tr><td>4016</td><td>-13</td></tr>\n      <tr><td>4020</td><td>-13</td></tr>\n      <tr><td>4024</td><td>0</td></tr>\n      <tr><td>4028</td><td>8</td></tr>\n      <tr><td>4032</td><td>4</td></tr>\n      <tr><td>4036</td><td>0</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>The resultant registers are:</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>4000</td></tr>\n      <tr><td>$s1</td><td>4</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>The resultant array is:</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>4000</td><td>4</td></tr>\n      <tr><td>4004</td><td>8</td></tr>\n      <tr><td>4008</td><td>-13</td></tr>\n      <tr><td>4012</td><td>0</td></tr>\n    </tbody>\n  </table>\n</div>\n",
+    "testCases": [
+      {
+        "name": "Test 1: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 4000, "$s1": 10 },
+        "initialMemory": { "4000": 4, "4004": 8, "4008": -13, "4012": 8, "4016": -13, "4020": -13, "4024": 0, "4028": 8, "4032": 4, "4036": 0 },
+        "expectedRegisters": { "$s0": 4000, "$s1": 4 },
+        "expectedMemory": { "4000": 4, "4004": 8, "4008": -13, "4012": 0 }
+      },
+      {
+        "name": "Test 2: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 13804, "$s1": 4 },
+        "initialMemory": { "13804": -8, "13808": -4, "13812": 4, "13816": 8 },
+        "expectedRegisters": { "$s0": 13804, "$s1": 4 },
+        "expectedMemory": { "13804": -8, "13808": -4, "13812": 4, "13816": 8 }
+      },
+      {
+        "name": "Test 3: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 8016, "$s1": 9 },
+        "initialMemory": { "8016": -50, "8020": 80, "8024": 100, "8028": 0, "8032": -80, "8036": -50, "8040": -100, "8048": 0 },
+        "expectedRegisters": { "$s0": 8016, "$s1": 6 },
+        "expectedMemory": { "8016": -50, "8020": 80, "8024": 100, "8028": 0, "8032": -80, "8036": -100 }
+      },
+      {
+        "name": "Test 4: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 10000, "$s1": 5 },
+        "initialMemory": { "10000": 230, "10004": 230, "10008": 230, "10012": 230, "10016": 230 },
+        "expectedRegisters": { "$s0": 10000, "$s1": 1 },
+        "expectedMemory": { "10000": 230 }
+      }
+    ]
+  },
+  "lab-12-14": {
+    "title": "12.14 Zylab 3 - Single Procedure Call",
+    "starter_code": "",
+    "solution_code": "Main: addi $t1, $zero, 1   # 0th element\n      sw $t1, 0($s2)       # Write to B[0]\nInit: addi $s0, $s0, 4     # 1st element address\nFor:  bge $t1, $s1, End    # if $t1 (=j) >= $s1 (=n1) end\n      addi $s3, $t1, 0     # n2 = j\nC_exp:lw $a0, 0($s0)       # jth element\n      addi $a1, $t1, 0     # argument 2 for exponent \n      jal F_exp\nC_App:addi $a2, $v0, 0     # arg 3 for append\n      addi $a1, $s3, 0     # arg 2 for append\n      addi $a0, $s2, 0     # arg 1 for append\n      jal F_app\nj_up: addi $t1, $t1, 1     # j++\n      addi $s0, $s0, 4     # update address of jth element\n      j For\nEnd:  addi $s3, $s3, 1     # n2++\n      j Exit\nF_exp:addi $v0, $a0, 0     # exp = x\n      addi $t8, $zero, 1      # j = 1\nloop: bge $t8, $a1, Ret1   # j >= y return\n      mult $v0, $a0        # exp*x\n      mflo $v0\nl_up: addi $t8, $t8, 1     # j++\n      j loop\nRet1: jr $ra                # Return from exp\nF_app:sll $t9, $a1, 2      # n2 *4\n      add $t9, $t9, $a0    # addr of B[n2]\n      sw $a2, 0($t9)       # write B[n2]\nRet2: jr $ra\nExit:\n",
+    "html": "\n<p>\n  Given an array of at least one integer, write a program to create a new array with elements\n  equal to the power of each element in the original array raised to the index, i.e.,\n  <code>P[i] = A[i]^i</code>.\n</p>\n\n<p>\n  For this, write two functions that will be called in main function independently.\n</p>\n\n<ul>\n  <li>\n    <strong>power</strong>\n    <ul>\n      <li>inputs: element (A[i]) and index (i)</li>\n      <li>task: returns the value of element raised to index (A[i]^i).</li>\n    </ul>\n  </li>\n  <li>\n    <strong>newElement</strong>\n    <ul>\n      <li>inputs: base address of new array P (*P), current size of P (variable k) and the new element (A[i]^i)</li>\n      <li>task: add the new element at the end.</li>\n      <li>This function does not return any value (void).</li>\n    </ul>\n  </li>\n</ul>\n\n<p>\n  Following is a sample C code to perform the required task. You may modify the code for the\n  functions, but the task performed should not be changed.\n</p>\n\n<pre>\nint main() {\n    // Variable Declaration\n    int *A, *P;     // Base addresses of A and P\n    int n, k;       // Lengths of arrays A and B\n    int pow;        // Return value from power function\n\n    // Task of main function\n    P[0] = 1;       // 0th element = A[0]^0 = 1\n\n    for (int j = 1; j < n; j++) {\n        k = j;      // Current length of array B\n        pow = power(A[j], j);\n        newElement(P, k, pow);\n    }\n    k++;\n}\n\nint power(int a, int b) {\n    int pow = a;\n    for (int l = 1; l < b; l++) {\n        pow = pow * a;\n    }\n    return(pow);\n}\n\nvoid newElement(int* P, int k, int pow) {\n    P[k] = pow;\n}\n</pre>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Variables</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>A</td></tr>\n      <tr><td>$s1</td><td>n</td></tr>\n      <tr><td>$s2</td><td>P</td></tr>\n      <tr><td>$s3</td><td>k</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>A[0]</td></tr>\n      <tr><td>$s0+4</td><td>A[1]</td></tr>\n      <tr><td>…</td><td>…</td></tr>\n      <tr><td>$s0+4*(n-1)</td><td>A[n-1]</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p class=\"lesson-example\">\n  Example Test: If the values of <code>$s1</code> through <code>$s7</code> are initialized\n  in the simulator as:\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>4000</td></tr>\n      <tr><td>$s1</td><td>5</td></tr>\n      <tr><td>$s2</td><td>8000</td></tr>\n      <tr><td>$s3</td><td>0</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>4000</td><td>10</td></tr>\n      <tr><td>4004</td><td>5</td></tr>\n      <tr><td>4008</td><td>-5</td></tr>\n      <tr><td>4012</td><td>-2</td></tr>\n      <tr><td>4016</td><td>0</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>The resultant registers will be:</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s2</td><td>8000</td></tr>\n      <tr><td>$s3</td><td>5</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>The resultant array P is:</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>8000</td><td>1</td></tr>\n      <tr><td>8004</td><td>5</td></tr>\n      <tr><td>8008</td><td>25</td></tr>\n      <tr><td>8012</td><td>-8</td></tr>\n      <tr><td>8016</td><td>0</td></tr>\n    </tbody>\n  </table>\n</div>\n",
+    "testCases": [
+      {
+        "name": "Test 1: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 4000, "$s1": 5, "$s2": 8000, "$s3": 0 },
+        "initialMemory": { "4000": 10, "4004": 5, "4008": -5, "4012": -2, "4016": 0 },
+        "expectedRegisters": { "$s2": 8000, "$s3": 5 },
+        "expectedMemory": { "8000": 1, "8004": 5, "8008": 25, "8012": -8, "8016": 0 }
+      },
+      {
+        "name": "Test 2: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 13800, "$s1": 1, "$s2": 13804, "$s3": 0 },
+        "initialMemory": { "13800": -8 },
+        "expectedRegisters": { "$s2": 13804, "$s3": 1 },
+        "expectedMemory": { "13804": 1 }
+      },
+      {
+        "name": "Test 3: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 8016, "$s1": 10, "$s2": 8000, "$s3": 0 },
+        "initialMemory": { "8016": -5, "8020": 8, "8024": 4, "8028": -6, "8032": 6, "8036": 0, "8040": -3, "8044": -2, "8048": 2, "8052": -2 },
+        "expectedRegisters": { "$s2": 8000, "$s3": 10 },
+        "expectedMemory": { "8000": 1, "8004": 8, "8008": 16, "8012": -216, "8016": 1296, "8020": 0, "8024": 729, "8028": -128, "8032": 256, "8036": -512 }
+      },
+      {
+        "name": "Test 4: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 2648, "$s1": 8, "$s2": 2648, "$s3": 0 },
+        "initialMemory": { "2648": -80, "2652": -40, "2656": 25, "2660": 20, "2664": -15, "2668": 10, "2672": -8, "2676": -4 },
+        "expectedRegisters": { "$s2": 2648, "$s3": 8 },
+        "expectedMemory": { "2648": 1, "2652": -40, "2656": 625, "2660": 8000, "2664": 50625, "2668": 100000, "2672": 262144, "2676": -16384 }
+      }
+    ]
+  },
+  "lab-12-15": {
+    "title": "12.15 Zylab 4 - Nested Procedure Call",
+    "starter_code": "",
+    "solution_code": "Main:    addi $a0, $s0, 0         # arg1 = head = $s0\n         addi $a1, $s2, 0         # arg2 = n = $s2\n         addi $a2, $s1, 0         # arg3 = node = $s1\n         jal Insert              # Call Insert function\nRet:     addi $s3, $v0, 0         # $s3 = output of insert function\n         j Exit\n\nInsert:  bne $a1, $zero, C_find  # n != 0 call find\n         sw $a0, 4($a2)          # node->next = head\n         addi $s0, $a2, 0         # head = node\n         j R_insert              # return\nC_find:  addi $sp, $sp, -4       # create space for 1 variable\n         sw $ra, 0($sp)          # store $ra = R_insert to stack\n         # args for find same as 1st 2 args of insert\n         jal Find                # addr1 = $v0, addr2 = $v1\n         sw $a2, 4($v0)          # addr1->next = node\n         sw $v1, 4($a2)          # node->next = addr2\n         lw $ra, 0($sp)          # retrieve $ra = R_insert \n         addi $sp, $sp, 4        # update stack pointer to original\nR_insert:lw $v0, 0($a2)          # node->value\n         jr $ra\n         \nFind:    addi $v0, $a0, 0         # curr = head\n         addi $t0, $zero, 1      # i = 1\nLoop:    bge $t0, $a1, R_find    # i >= n return\n         lw $v0, 4($v0)          # curr = curr->next\n         lw $t1, 4($v0)          # curr->next\n         beq $t1, $zero, R_find  # break if NULL (last node)\n         addi $t0, $t0, 1        # i++\n         j Loop\nR_find:  lw $v1, 4($v0)          # 2nd return value = curr->next \n         jr $ra\n         \nExit:\n",
+    "html": "\n<p>\n  Write a MIPS program to add a given node in a linked list at the specified location, using\n  <strong>Nested Procedure Calls</strong>. If your code runs perfectly, but you didn't use\n  Procedure Execution correctly, you will be given zero points.\n</p>\n\n<p>Given Inputs:</p>\n<ul>\n  <li>the head of a linked list, i.e, address of the start (first node) of the list</li>\n  <li>location: number of node in the linked list after which node is to be added\n      (0 to add before the 1st node, 1 to add after 1st node and so on.)</li>\n  <li>the address of the node to be inserted</li>\n</ul>\n\n<p>And each node contains:</p>\n<ul>\n  <li>an integer value</li>\n  <li>address to the next node (address is NULL (0) if it is the last node in the list)</li>\n</ul>\n\n<p>Write the following three functions that will be called in order to update the linked list by adding the new node.</p>\n\n<ul>\n  <li>\n    <strong>main</strong>\n    <ul>\n      <li>task: calls the addNode function and reads the value of the newly added node.</li>\n    </ul>\n  </li>\n  <li>\n    <strong>addNode</strong>\n    <ul>\n      <li>inputs: head of linked list (head), location to add node (n) and address of node to be added (node)</li>\n      <li>task: calls the findNode function and add the node after the n^th node in the linked list.\n          If the number is greater than the size of list, then add the node at the end of the list.</li>\n      <li>output: value of the inserted node.</li>\n    </ul>\n  </li>\n  <li>\n    <strong>findNode</strong>\n    <ul>\n      <li>inputs: head of linked list (*head) and location to add node (n)</li>\n      <li>task: navigate the linked list to find the addresses of the n^th and (n+1)^th nodes</li>\n      <li>outputs: addresses of the n^th and (n+1)^th nodes.</li>\n    </ul>\n  </li>\n</ul>\n\n<p>\n  Following is a sample C code segment to perform the required task. (this code is incomplete\n  and does not include creating the linked list or a new node, so you cannot compile it using\n  any C compiler.) You may modify the code for the functions, but the task performed should\n  not be changed.\n</p>\n\n<pre>\n// Parameters of a node in the linked list (need not declare or initialize in MIPS)\ntypedef struct node {\n    int value;      // Value in the node accessed by node->value\n    node* next;     // Address of next node accessed by node->next\n} node;             // Datatype for each node\n\nnode *head;         // address of head (first node) of linked list (global pointer)\n\nint main() {\n    // Variable Declaration\n    node *newNode;  // address of node to be added\n    int n;          // number of the node in the list after which node is to be added\n    int value;      // Value of the node to be added\n\n    // Task of main function\n    value = addNode(head, n, newNode);\n}\n\nint addNode (node* head, int n, node* newNode) {\n    node *addr1, *addr2; // addr1 = address of n^th node, addr2 = address of (n+1)^th node\n    if (n == 0 || head == 0) {                                  // If node should be added at the beginning of the list\n        newNode->next = head;   // Next for new node = head of original list\n        head = newNode;         // global head updated to the new node\n        return(newNode->value); // value of the node = data at the address of the node, and then return to caller\n    }\n    [addr1, addr2] = findNode (head, n);        // Call findNode function\n    addr1->next = newNode;      // Next for n^th node = node to be added\n    newNode->next = addr2;      // Next for added node = (n+1)^th node of original list\n    return(newNode->value);     // value of the node = data at the address of the node\n}\n\nnode* findNode (node* head, int n) {\n    node* curr = head;\n    for (int i = 1; i < n; i ++) {\n        curr = curr->next;      // Update the pointer to next node address\n        if (curr == 0)          // Break if end of List\n            break;\n        if (curr->next == 0)    // Break if end of List\n            break;\n    }\n    return([curr, curr->next]); // Two return values (need not return as array in MIPS)\n}\n</pre>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Variables</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>head</td></tr>\n      <tr><td>$s1</td><td>newNode</td></tr>\n      <tr><td>$s2</td><td>n</td></tr>\n      <tr><td>$s3</td><td>val</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>Linked List and New Node in Memory:</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>newNode</td><td>newNode->value</td></tr>\n      <tr><td>head</td><td>node1->value</td></tr>\n      <tr><td>head + 4</td><td>node1->next</td></tr>\n      <tr><td>node1->next</td><td>node2->value</td></tr>\n      <tr><td>node1->next + 4</td><td>node2->next</td></tr>\n      <tr><td>node2->next</td><td>node3->value</td></tr>\n      <tr><td>node2->next + 4</td><td>node3->next</td></tr>\n      <tr><td>…</td><td>…</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p class=\"lesson-example\">\n  Example Test: If the values of <code>$s0</code> through <code>$s3</code> and Memory\n  contents are initialized in the simulator as:\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>4000</td></tr>\n      <tr><td>$s1</td><td>8000</td></tr>\n      <tr><td>$s2</td><td>2</td></tr>\n      <tr><td>$s3</td><td>0</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>8000</td><td>230</td></tr>\n      <tr><td>4000</td><td>4</td></tr>\n      <tr><td>4004</td><td>3848</td></tr>\n      <tr><td>3848</td><td>-15</td></tr>\n      <tr><td>3852</td><td>6104</td></tr>\n      <tr><td>6104</td><td>-10</td></tr>\n      <tr><td>6108</td><td>5008</td></tr>\n      <tr><td>5008</td><td>0</td></tr>\n      <tr><td>5012</td><td>4500</td></tr>\n      <tr><td>4500</td><td>40</td></tr>\n      <tr><td>4504</td><td>0</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>The resultant registers are:</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>4000</td></tr>\n      <tr><td>$s1</td><td>8000</td></tr>\n      <tr><td>$s2</td><td>2</td></tr>\n      <tr><td>$s3</td><td>230</td></tr>\n    </tbody>\n  </table>\n</div>\n",
+    "testCases": [
+      {
+        "name": "Test 1: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 4000, "$s1": 8000, "$s2": 2, "$s3": 0 },
+        "initialMemory": { "4000": 4, "4004": 3848, "3848": -15, "3852": 6104, "6104": -10, "6108": 5008, "5008": 0, "5012": 4500, "4500": 40, "4504": 0, "8000": 230 },
+        "expectedRegisters": { "$s0": 4000, "$s1": 8000, "$s2": 2, "$s3": 230 },
+        "expectedMemory": { "3848": -15, "3852": 8000, "4000": 4, "4004": 3848, "4500": 40, "4504": 0, "5008": 0, "5012": 4500, "6104": -10, "6108": 5008, "8000": 230, "8004": 6104 }
+      },
+      {
+        "name": "Test 2: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 13804, "$s1": 4000, "$s2": 0, "$s3": 0 },
+        "initialMemory": { "13804": -8, "13808": 8000, "8000": 80, "8004": 0, "4000": -230 },
+        "expectedRegisters": { "$s0": 4000, "$s1": 4000, "$s2": 0, "$s3": -230 },
+        "expectedMemory": { "4000": -230, "4004": 13804, "8000": 80, "8004": 0, "13804": -8, "13808": 8000 }
+      },
+      {
+        "name": "Test 3: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 8016, "$s1": 13000, "$s2": 100, "$s3": 0 },
+        "initialMemory": { "8016": -50, "8020": 8040, "4024": 100, "4028": 6032, "6032": -80, "6036": 0, "8040": -100, "8044": 4024, "13000": 0 },
+        "expectedRegisters": { "$s0": 8016, "$s1": 13000, "$s2": 100, "$s3": 0 },
+        "expectedMemory": { "4024": 100, "4028": 6032, "6032": -80, "6036": 13000, "8016": -50, "8020": 8040, "8040": -100, "8044": 4024, "13000": 0, "13004": 0 }
+      },
+      {
+        "name": "Test 4: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 10000, "$s1": 4024, "$s2": 3, "$s3": 0 },
+        "initialMemory": { "10000": 23, "10004": 5008, "5008": -5, "5012": 8016, "8016": 20, "8020": 0, "4024": 30 },
+        "expectedRegisters": { "$s0": 10000, "$s1": 4024, "$s2": 3, "$s3": 30 },
+        "expectedMemory": { "4024": 30, "4028": 0, "5008": -5, "5012": 8016, "8016": 20, "8020": 4024, "10000": 23, "10004": 5008 }
+      }
+    ]
+  },
+  "lab-12-16": {
+    "title": "12.16 Zylab 5 - Recursive Procedure Call",
+    "starter_code": "",
+    "solution_code": "Main:    add $t0, $s0, $s1    # a + b\n         bge $t0, $zero, Sub     # If $t0 > 0, skip to Sub\n         sub $t0, $zero, $t0     # Negate if Sum negative\nSub:     sub $t1, $s0, $s1    # a - b\n         bge $t1, $zero, Args    # If $t1 > 0, skip to Args\n         sub $t1, $zero, $t1     # Negate if Diff negative\nArgs:    addi $a0, $t0, 0     # |a+b|\n         addi $a1, $t1, 0     # |a-b|\n         jal Recursion\n         mult $v0, $s0         # a * $v0\n         mflo $t2\nSecond:  addi $a0, $t1, 0     # |b-a|\n         addi $a1, $t0, 0     # |b+a|\n         jal Recursion\n         mult $v0, $s1         # b * $v0\n         mflo $t3\nResult:  sub $s2, $t2, $t3    # Final Result in Main\n         j Exit\n         \nRecursion:  bgt $a0, $zero, XPos       # x > 0?\n            bgt $a1, $zero, YPos       # x <= 0 , y > 0?\nBothLess:   addi $v0, $zero, 0          # x <= 0 , y <= 0\n            jr $ra\n            \nYPos:       addi $v0, $a1, 0        # x <= 0 , y > 0\n            jr $ra\n            \nXPos:       bgt $a1, $zero, BothPos    # x > 0 , y > 0?\n            addi $v0, $a0, 0        # x > 0 , y <= 0\n            jr $ra\n\nBothPos:    addi $sp, $sp, -16      # Stack space for $ra, $a0, $a1, $v0\n            sw $ra, 12($sp)          \n            sw $a1, 8($sp)\n            sw $a0, 4($sp)\n            \n            addi $a0, $a0, -1       # x - 1\n            jal Recursion           # Recursion (x-1, y)\n            sw $v0, 0($sp)       \n            \n            lw $a0, 4($sp)\n            lw $a1, 8($sp)\n            addi $a1, $a1, -1       # y - 1\n            jal Recursion           # Recursion (x, y-1)\n            \n            lw $t8, 0($sp)          # Retrieve 1st recursion result\n            add $v0, $v0, $t8       # Sum of the 2 recursions\n            \n            lw $ra, 12($sp)          # Retrieve return address\n            addi $sp, $sp, 16\n            jr $ra\n            \nExit:\n",
+    "html": "\n<p>\n  Write a MIPS program using <strong>Recursive Procedure Execution</strong> to perform the\n  following tasks: <strong>Note:</strong> If your code runs perfectly, but you didn't use\n  Procedure Execution correctly, you will be given zero points.\n</p>\n\n<p>Write the following functions in MIPS.</p>\n\n<ul>\n  <li>\n    <strong>main</strong>\n    <ul>\n      <li>inputs: integers a, b</li>\n      <li>task: Compute the integer: <code>a * F(|a+b|, |a-b|) - b * F(|b-a|, |b+a|)</code>.</li>\n    </ul>\n  </li>\n  <li>\n    <strong>recursion F(x, y)</strong>\n    <ul>\n      <li>inputs: integers x, y.</li>\n      <li>task:\n        <pre>\nF(x, y) = F(x-1, y) + F(x, y-1), if x, y > 0\nF(x, y) = y if x <= 0, y > 0\nF(x, y) = x if y <= 0, x > 0\nF(x, y) = 0 if x, y <= 0\n        </pre>\n      </li>\n    </ul>\n  </li>\n</ul>\n\n<p>\n  Following is a sample C code segment. You may modify the code for the functions, but the\n  task performed should not be changed, i.e., you should use recursive procedure calls.\n</p>\n\n<pre>\nint main(int a, int b) {\n    int result = a * recursion(abs(a+b), abs(a-b)) - b * recursion(abs(b-a), abs(b+a));\n}\n\nint recursion(int x, int y) {\n   if (x <= 0 && y <= 0)\n       return(0);\n   else if (x > 0 && y <= 0)\n       return(x);\n   else if (x <= 0 && y > 0)\n       return(y);\n   else\n       return(recursion(x-1, y) + recursion(x, y-1));\n}\n</pre>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Variables</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>a</td></tr>\n      <tr><td>$s1</td><td>b</td></tr>\n      <tr><td>$s2</td><td>result</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p class=\"lesson-example\">\n  Example Test: If the values of <code>$s1</code> and <code>$s2</code> are initialized in\n  the simulator as:\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>1</td></tr>\n      <tr><td>$s1</td><td>2</td></tr>\n      <tr><td>$s2</td><td>0</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>The resultant registers are:</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>1</td></tr>\n      <tr><td>$s1</td><td>2</td></tr>\n      <tr><td>$s2</td><td>-7</td></tr>\n    </tbody>\n  </table>\n</div>\n",
+    "testCases": [
+      {
+        "name": "Test 1: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 1, "$s1": 2, "$s2": 0 },
+        "expectedRegisters": { "$s0": 1, "$s1": 2, "$s2": -7 }
+      },
+      {
+        "name": "Test 2: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 4, "$s1": 2, "$s2": 0 },
+        "expectedRegisters": { "$s0": 4, "$s1": 2, "$s2": 128 }
+      },
+      {
+        "name": "Test 3: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 230, "$s1": 230, "$s2": 0 },
+        "expectedRegisters": { "$s0": 230, "$s1": 230, "$s2": 0 }
+      },
+      {
+        "name": "Test 4: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 4, "$s1": 0, "$s2": 0 },
+        "expectedRegisters": { "$s0": 4, "$s1": 0, "$s2": 448 }
+      }
+    ]
+  },
+  "lab-12-17": {
+    "title": "12.17 ZyLab 6 - MIPS Recursive Multiplication",
+    "starter_code": "",
+    "solution_code": "Main: addi $a0, $s0, 0\n      addi $a1, $s1, 0\n      addi $a2, $s2, 0\n      slt $s3, $a1, $zero  # $s3 = 1, if md < 0 \n      beq $s3, $zero, m    # if md >= 0 skip sub1\nsub1: sub $a1, $zero, $a1\nm:    slt $s4, $a2, $zero  # $s4 = 1, if m < 0\n      beq $s4, $zero, Call # if m >= 0 skip sub2\nsub2: sub $a2, $zero, $a2\nCall: addi $a3, $zero, 16  # assign n = 16\n      jal Pdt              # First Recursive Call\n      beq $s3, $s4, same   # if operands have same sign skip neg\n      sub $s0, $zero, $v0\n      j Exit\nsame: addi $s0, $v0, 0     # Product = return value\n      j Exit\n      \nPdt:  bne $a3, $zero, Next # if n = 0, return\n      addi $v0, $a0, 0      # return p\n      jr $ra\nNext: addi $sp, $sp, -4    # Use stack\n      sw $ra, 0($sp)       # Store $ra\n      andi $t0, $a2, 1     # m_0\n      beq $t0, $zero, task # if LSb == 0, skip p+=md \n      add $a0, $a0, $a1    # p = p + md\ntask: sll $a1, $a1, 1      # md << 1\n      srl $a2, $a2, 1      # m >> 1\n      addi $a3, $a3, -1    # n--\n      jal Pdt\nRet:  lw $ra, 0($sp)       # retrieve $ra\n      addi $sp, $sp, 4     # update $sp\n      jr $ra\n   \nExit:\n",
+    "html": "\n<p>\n  Write a MIPS program to compute the product of two 16-bit signed numbers using\n  <em>recursive procedure calls</em>.\n  <strong>Note:</strong> You CANNOT use the <code>mult</code> or <code>mul</code>\n  instructions. You should use Procedure Execution for full credit. If your test cases\n  pass but you have not used Procedure execution, you will receive only half the points\n  (at most 2 points).\n</p>\n\n<p>\n  Given the multiplicand (<code>md</code>) and multiplier (<code>m</code>) as inputs,\n  write the <strong>main</strong> and <strong>recursion</strong> functions to compute\n  the product (<code>p</code>) using the shift and add recursive algorithm for\n  multiplication.\n</p>\n\n<p>Write the following functions in MIPS.</p>\n\n<ul>\n  <li>\n    <strong>main</strong>\n    <ul>\n      <li>\n        task: initialize product, multiplicand and multiplier registers and call the\n        recursion function with iteration number equal to the size of numbers (16-bit).\n      </li>\n      <li>\n        Note: If numbers are negative, convert to positive numbers and then multiply.\n        Add sign separately at the end. Do not convert the original input registers,\n        only convert the argument registers sent to the recursion function.\n      </li>\n    </ul>\n  </li>\n\n  <li>\n    <strong>recursion</strong>\n    <ul>\n      <li>\n        inputs: product (p), multiplicand (md) and multiplier (m) registers and the\n        iteration number (n).\n      </li>\n      <li>\n        task: compute the nth iterative step of multiplication, call recursion function\n        by decrementing n and return if n = 0.\n      </li>\n      <li>outputs: updated product (p).</li>\n    </ul>\n  </li>\n</ul>\n\n<p>\n  Refer to the binary shift and add multiplication algorithm discussed in class. While\n  writing the code,\n</p>\n\n<p>\n  Following is a sample C code segment. You may modify the code for the functions, but\n  the task performed should not be changed, i.e., you should use recursive procedure\n  calls.\n</p>\n\n<pre>\n// multiplier and multiplicand are inputs (For compilable C code, you should use argc and argv for command line inputs)\nint main(int m, int md) {         \n    // Initializing Arguments\n    int sign_p = 0;\n     // negate the operands if negative \n    if (m < 0 and md > 0) or (m > 0 and md < 0)\n         sign_p = 1;\n    if (m < 0)   \n        arg_m = - m;     // Modify Argument not Given Register\n    if (md < 0)    \n        arg_md = - md;    // Modify Argument not Given Register\n    int p = recursion(0, arg_md, arg_m, 16);     // 16-bit unsigned multiplication => recursion 16 times\n    if (sign_p == 1)\n        p = - p;        // negate if one of the operands is negative\n}\n\nint recursion(int p, int md, int m, int n) {\n    if (n == 0) \n        return(p);\n    else {\n        int m_0 = m & 1;    // 0th or least significant bit of multiplier\n        if (m_0  == 1)\n              p = p + md;\n        m = m >> 1;\n        md = md << 1;     \n        p = recursion(p, md, m, n-1);         // updated values of p, md and m - arguments\n        return(p);\n    }\n}\n</pre>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Variables</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>product</td></tr>\n      <tr><td>$s1</td><td>multiplicand</td></tr>\n      <tr><td>$s2</td><td>multiplier</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>\n  Example Test: If the values of <code>$s1</code> and <code>$s2</code> are initialized in\n  the simulator as:\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>0</td></tr>\n      <tr><td>$s1</td><td>8000</td></tr>\n      <tr><td>$s2</td><td>15000</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>The resultant registers are:</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>120000000</td></tr>\n      <tr><td>$s1</td><td>8000</td></tr>\n      <tr><td>$s2</td><td>15000</td></tr>\n    </tbody>\n  </table>\n</div>\n",
+    "testCases": [
+      {
+        "name": "Test 1: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 0, "$s1": 8000, "$s2": 15000 },
+        "expectedRegisters": { "$s0": 120000000, "$s1": 8000, "$s2": 15000 }
+      },
+      {
+        "name": "Test 2: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 0, "$s1": -230, "$s2": 11012 },
+        "expectedRegisters": { "$s0": -2532760, "$s1": -230, "$s2": 11012 }
+      },
+      {
+        "name": "Test 3: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 0, "$s1": -23011, "$s2": -23012 },
+        "expectedRegisters": { "$s0": 529529132, "$s1": -23011, "$s2": -23012 }
+      },
+      {
+        "name": "Test 4: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 0, "$s1": 23012, "$s2": -11023 },
+        "expectedRegisters": { "$s0": -253661276, "$s1": 23012, "$s2": -11023 }
+      }
+    ]
+  },
+  "lab-12-18": {
+    "title": "12.18 Zylab 7 - MIPS Procedure Execution",
+    "use_isolation": true,
+    "starter_code": "",
+    "solution_code": "Main:    addi $t1, $zero, 0   # j = 0\nLoop1:   bge $t0, $s2, Exit   # j >= n exit\n         sll $t1, $t0, 2      # j * 4\n         add $t1, $t1, $s1    # Address of B[j]\n         addi $a0, $s0, 0     # 1st argument to function\n         addi $a1, $t0, 0     # 2nd argument to function\n         jal nSum             # Call function\n         sw $v0, 0($t1)       # Write to B[j]\n         addi $t0, $t0, 1     # j ++\n         j Loop1               \n      \nnSum:    lw $v0, 0($a0)       # sum = A[0]\n         addi $t2, $zero, 1      # j = 1\nLoop2:   bgt $t2, $a1, End    # j > k end\n         sll $t3, $t2, 2      # j * 4\n         add $t3, $t3, $a0    # address of A[j]\n         lw $t3, 0($t3)       # value of A[j]\n         add $v0, $v0, $t3    # sum += A[j]\n         addi $t2, $t2, 1     # j ++\n         j Loop2 \nEnd:     jr $ra\n\nExit:\n",
+    "html": "\n<p>\n  Given an array of at least one integer, write a program to create a new array with\n  elements equal to the exponent of each element in the original array raised to the\n  index, i.e., <code>B[i] = sum of 1st i elements of A</code>.\n</p>\n\n<p>\n  For this, write the following two functions using <strong>Procedure Execution</strong>.\n  (If procedure execution or functions are not used, you will receive a score of 0, even\n  if the tests pass).\n</p>\n\n<ul>\n  <li>\n    <strong>main</strong>\n    <ul>\n      <li>task: Create array B by obtaining the sum from the nSum function.</li>\n    </ul>\n  </li>\n  <li>\n    <strong>nSum</strong>\n    <ul>\n      <li>inputs: base address of array A (<code>*A</code>), index of B (<code>k</code>)</li>\n      <li>\n        task: compute the sum of 1st <code>k</code> elements of array A.\n        (If array A elements are overwritten, the updated values should be used.)\n      </li>\n      <li>return: sum of 1st <code>k</code> elements of array A.</li>\n    </ul>\n  </li>\n</ul>\n\n<p>\n  Following is a sample C code to perform the required task. You may modify the code for\n  the functions, but the task performed should not be changed.\n</p>\n\n<pre>\nint main() {\n    // Variable Declaration\n    int* A, B;      // Base addresses of A and B\n    int n;          // Length of arrays A and B\n\n    // Task of main function\n    for (int j = 0; j < n; j++) {\n        B[j] = nSum(A, j);\n    }\n}\n\nint nSum(int* A, int k) {\n    int sum = A[0];\n    for (int j = 1; j <= k; j++) {\n        sum = sum + A[j];\n    }\n    return(sum);\n}\n</pre>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Variables</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>A</td></tr>\n      <tr><td>$s1</td><td>B</td></tr>\n      <tr><td>$s2</td><td>n</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>A[0]</td></tr>\n      <tr><td>$s0+4</td><td>A[1]</td></tr>\n      <tr><td>…</td><td>…</td></tr>\n      <tr><td>$s0+4*(n-1)</td><td>A[n-1]</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>\n  Example Test: If the values of <code>$s1</code> through <code>$s7</code> are initialized\n  in the simulator as:\n</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Registers</th><th>Data</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>$s0</td><td>4000</td></tr>\n      <tr><td>$s1</td><td>8000</td></tr>\n      <tr><td>$s2</td><td>5</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>4000</td><td>10</td></tr>\n      <tr><td>4004</td><td>5</td></tr>\n      <tr><td>4008</td><td>-5</td></tr>\n      <tr><td>4012</td><td>-2</td></tr>\n      <tr><td>4016</td><td>0</td></tr>\n    </tbody>\n  </table>\n</div>\n\n<p>The resultant array B is:</p>\n\n<div class=\"center-table\">\n  <table>\n    <thead>\n      <tr><th>Addresses</th><th>Contents</th></tr>\n    </thead>\n    <tbody>\n      <tr><td>8000</td><td>10</td></tr>\n      <tr><td>8004</td><td>15</td></tr>\n      <tr><td>8008</td><td>10</td></tr>\n      <tr><td>8012</td><td>8</td></tr>\n      <tr><td>8016</td><td>8</td></tr>\n    </tbody>\n  </table>\n</div>\n",
+    "testCases": [
+      {
+        "name": "Test 1: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 4000, "$s1": 8000, "$s2": 5 },
+        "initialMemory": { "4000": 10, "4004": 5, "4008": -5, "4012": -2, "4016": 0 },
+        "expectedMemory": { "8000": 10, "8004": 15, "8008": 10, "8012": 8, "8016": 8 }
+      },
+      {
+        "name": "Test 2: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 13800, "$s1": 13804, "$s2": 1 },
+        "initialMemory": { "13800": -8 },
+        "expectedMemory": { "13804": -8 }
+      },
+      {
+        "name": "Test 3: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 8016, "$s1": 8000, "$s2": 10 },
+        "initialMemory": { "8016": -5, "8020": 8, "8024": 4, "8028": -6, "8032": 6, "8036": -10, "8040": -8, "8044": 2, "8048": 8, "8052": -8 },
+        "expectedMemory": { "8000": -5, "8004": 3, "8008": 7, "8012": 1, "8016": 7, "8020": -3, "8024": -11, "8028": -9, "8032": -1, "8036": -9 }
+      },
+      {
+        "name": "Test 4: Compare storage (1 point)",
+        "points": 1,
+        "initialRegisters": { "$s0": 2648, "$s1": 2648, "$s2": 8 },
+        "initialMemory": { "2648": -8, "2652": 4, "2656": 15, "2660": 12, "2664": 12, "2668": 10, "2672": 8, "2676": 14 },
+        "expectedMemory": { "2648": -8, "2652": -4, "2656": 11, "2660": 23, "2664": 35, "2668": 45, "2672": 53, "2676": 67 }
+      }
+    ]
+  }
+}

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/mode/simple.min.js"></script>
+
+    <title>MIPS Emulator</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="menu-wrap">
+          <button id="labs-menu-button" type="button" aria-expanded="false">☰</button>
+          <div id="labs-menu" class="hidden">
+            <div id="labs-menu-list"></div>
+          </div>
+        </div>
+        <div class="brand">MIPS Emulator</div>
+      </div>
+      <div class="topbar-right">
+        <nav class="nav">
+          <a href="index.html" class="active">Labs</a>
+          <a href="teacher.html">Professor View</a>
+          <a href="students.html">Students</a>
+          <a href="testgen.html">Test Generator</a>
+        </nav>
+        <button id="lesson-popout" class="lesson-toggle-btn" type="button">Pop out lesson</button>
+        <button id="lesson-toggle" class="lesson-toggle-btn" type="button">Hide lesson</button>
+      </div>
+    </header>
+
+    <!--labs/lessons-->
+    <section id="lesson-container" class="lesson-container hidden">
+      <div class="lesson-header">
+        <h2 id="lesson-title"></h2>
+      </div>
+      <div id="lesson-body"></div>
+    </section>
+
+    <main class="workspace">
+      <!-- assembler and editor -->
+      <section class="panel assembler">
+        <div class="assembler-header">
+          <h3>Assembler</h3>
+          <div class="buttons assembler-buttons">
+            <button id="run">Run</button>
+            <button id="step">Step</button>
+            <button id="stop">Stop</button>
+          </div>
+        </div>
+        <div class="assembler-content">
+          <textarea spellcheck="false"></textarea>
+        </div>
+      </section>
+
+      <!-- draggable divider -->
+      <div class="v-resizer" id="v-resizer"></div>
+
+      <!-- right side for registers memory widgets -->
+      <section class="panel right-panel">
+        <!-- Initial Values (student can set before running) -->
+        <div class="side-box init-values-box">
+          <div class="init-values-header">
+            <strong>Initial Values</strong>
+            <button id="init-values-toggle" class="btn-ghost init-toggle-btn">▼</button>
+          </div>
+          <div id="init-values-body" class="init-values-body">
+            <fieldset class="tc-fieldset">
+              <legend>Registers</legend>
+              <div id="student-init-regs" class="tc-kv-list"></div>
+              <button type="button" class="btn-ghost tc-add-row"
+                      data-target="student-init-regs"
+                      data-placeholder-key="$t0"
+                      data-placeholder-val="0">+ register</button>
+            </fieldset>
+            <fieldset class="tc-fieldset">
+              <legend>Memory</legend>
+              <div id="student-init-mem" class="tc-kv-list"></div>
+              <button type="button" class="btn-ghost tc-add-row"
+                      data-target="student-init-mem"
+                      data-placeholder-key="0x10000000"
+                      data-placeholder-val="0">+ address</button>
+            </fieldset>
+            <div class="init-actions">
+              <button id="init-apply-btn" class="init-apply-btn">Apply &amp; Reset</button>
+              <button id="init-clear-btn" class="btn-ghost">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-box">
+          <strong>Registers</strong>
+          <div id="registers"></div>
+        </div>
+        <div class="side-box">
+          <strong>Widgets</strong>
+          <div id="widgets"></div>
+        </div>
+      </section>
+
+      <section class="memory-panel">
+        <div class="memory-header-bar">
+          <span>Memory</span>
+          <div class="mem-controls">
+            <input type="text" id="mem-start-input" value="0x10000000" placeholder="Address">
+            <button id="mem-go-btn">Go</button>
+          </div>
+        </div>
+
+        <div class="memory-grid-header">
+          <span class="m-addr">Address</span>
+          <span class="m-hex">Hex (16 bytes)</span>
+          <span class="m-ascii">ASCII</span>
+        </div>
+
+        <div id="memory-view"></div>
+      </section>
+
+      <!--console-->
+      <section class="console">
+        <div class="console-header">
+          <span>Console</span>
+          <div class="buttons">
+            <span
+              id="attempts-display"
+              style="font-size: 12px; padding: 3px 8px; color: #27ae60; font-weight: 600; align-self: center;"
+            ></span>
+            <button id="grade-button" style="background: #27ae60;">Grade Me</button>
+          </div>
+        </div>
+        <div class="console-inner" id="console-output"></div>
+        <div id="latest-submission-container" class="submission-container hidden"></div>
+
+        <div id="grade-results" style="margin-top: 20px;"></div>
+
+      <!-- Test Cases Dropdown -->
+      <div id="test-cases-section" class="test-cases-section">
+        <div class="test-cases-header">
+          <h3>Test Cases</h3>
+          <button id="test-cases-toggle" class="test-cases-toggle-btn">&#9660; Show Test Cases</button>
+        </div>
+        <div id="test-cases-content" class="test-cases-content">
+          <div id="test-cases-list"></div>
+        </div>
+      </div>
+      </section>
+    </main>
+
+    <!-- scripts -->
+    <script type="module">
+      import { checkAuth } from './auth-check.js';
+      window.__currentUser = await checkAuth();
+    </script>
+    <script type="module" src="main.js"></script>
+  </body>
+</html>

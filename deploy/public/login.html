@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MIPS Emulator · Login</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .auth-container {
+      max-width: 400px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    .auth-card {
+      background: #e0e0e0;
+      border: 1px solid #000;
+      padding: 24px;
+    }
+
+    .auth-card h2 {
+      font-size: 18px;
+      text-align: center;
+      margin: 0 0 20px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid #999;
+      margin-bottom: 16px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      text-align: center;
+      padding: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #d0d0d0;
+      border: 1px solid #999;
+      border-bottom: none;
+    }
+
+    .auth-tab.active {
+      background: #e0e0e0;
+      border-bottom: 1px solid #e0e0e0;
+      margin-bottom: -1px;
+    }
+
+    .auth-tab:not(.active) {
+      background: #c0c0c0;
+    }
+
+    .auth-form { display: none; }
+    .auth-form.active { display: block; }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 6px 8px;
+      font-size: 13px;
+      border: 1px solid #999;
+      border-radius: 2px;
+      box-sizing: border-box;
+    }
+
+    .field small {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .auth-btn {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid #000;
+      border-radius: 2px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .auth-btn.login-btn {
+      background: #4caf50;
+      color: #fff;
+    }
+
+    .auth-btn.signup-btn {
+      background: #2196f3;
+      color: #fff;
+    }
+
+    .auth-btn:hover {
+      opacity: 0.9;
+    }
+
+    .auth-error {
+      color: #e74c3c;
+      font-size: 13px;
+      text-align: center;
+      min-height: 1.4em;
+      margin-top: 8px;
+    }
+
+    .auth-success {
+      color: #27ae60;
+      font-size: 13px;
+      text-align: center;
+      min-height: 1.4em;
+      margin-top: 8px;
+    }
+
+    .roster-notice {
+      font-size: 11px;
+      color: #666;
+      margin: 8px 0 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">MIPS Emulator</div>
+  </header>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <h2>MIPS Emulator</h2>
+
+      <div class="auth-tabs">
+        <div class="auth-tab active" data-tab="login">Log In</div>
+        <div class="auth-tab" data-tab="signup">Student Sign Up</div>
+      </div>
+
+      <div id="login-form" class="auth-form active">
+        <div class="field">
+          <label for="login-username">ASURITE ID</label>
+          <input id="login-username" type="text" placeholder="e.g. jdoe42" autocomplete="username" />
+        </div>
+
+        <div class="field">
+          <label for="login-password">Password</label>
+          <input id="login-password" type="password" autocomplete="current-password" />
+        </div>
+
+        <button id="login-btn" class="auth-btn login-btn">Log In</button>
+        <p id="login-error" class="auth-error"></p>
+      </div>
+
+      <div id="signup-form" class="auth-form">
+        <div class="field">
+          <label for="signup-asurite">ASURITE ID</label>
+          <input id="signup-asurite" type="text" placeholder="e.g. jdoe42" autocomplete="username" />
+        </div>
+
+        <div class="field">
+          <label for="signup-email">ASU Email</label>
+          <input id="signup-email" type="email" placeholder="jdoe42@asu.edu" autocomplete="email" />
+          <small>Must be an @asu.edu address</small>
+        </div>
+
+        <div class="field">
+          <label for="signup-name">Full Name</label>
+          <input id="signup-name" type="text" placeholder="As it appears on Canvas" autocomplete="name" />
+        </div>
+
+        <div class="field">
+          <label for="signup-asuid">ASU ID Number</label>
+          <input id="signup-asuid" type="text" placeholder="10 digit ID" autocomplete="off" />
+        </div>
+
+        <div class="field">
+          <label for="signup-password">Password</label>
+          <input id="signup-password" type="password" placeholder="At least 4 characters" autocomplete="new-password" />
+        </div>
+
+        <p class="roster-notice">You must be on the course roster to sign up. Contact your instructor if you are not enrolled.</p>
+        <button id="signup-btn" class="auth-btn signup-btn">Create Account</button>
+        <p id="signup-error" class="auth-error"></p>
+        <p id="signup-success" class="auth-success"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+
+    document.querySelectorAll('.auth-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+        tab.classList.add('active');
+
+        document.getElementById(tab.dataset.tab + '-form').classList.add('active');
+      });
+    });
+
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const username = document.getElementById('login-username').value.trim();
+
+      const password = document.getElementById('login-password').value;
+      const errorEl = document.getElementById('login-error');
+
+      errorEl.textContent = '';
+
+      if (!username || !password) {
+        errorEl.textContent = 'Please fill in all fields.';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorEl.textContent = data.error || 'Login failed.';
+          return;
+        }
+
+        const role = data.user.role;
+        if (role === 'instructor') {
+          localStorage.setItem('professorAuthed', 'true');
+          window.location.href = 'teacher.html';
+        } else {
+          window.location.href = 'index.html';
+        }
+
+      } catch (err) {
+        errorEl.textContent = 'Network error. Is the server running?';
+      }
+    });
+
+    document.getElementById('signup-asuid').addEventListener('input', (e) => {
+      // Removes any non-digit character as the student types
+      e.target.value = e.target.value.replace(/\D/g, '').substring(0, 10);
+    });
+
+    document.getElementById('signup-btn').addEventListener('click', async () => {
+      const asurite = document.getElementById('signup-asurite').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const fullName = document.getElementById('signup-name').value.trim();
+      const asuId = document.getElementById('signup-asuid').value.trim();
+
+      const password = document.getElementById('signup-password').value;
+      const errorEl = document.getElementById('signup-error');
+      const successEl = document.getElementById('signup-success');
+
+      errorEl.textContent = '';
+      successEl.textContent = '';
+
+      if (!asurite || !email || !fullName || !password) {
+        errorEl.textContent = 'Please fill in all required fields.';
+        return;
+      }
+
+      // ASU ID format validation
+      if (!/^\d{10}$/.test(asuId)) {
+        errorEl.textContent = 'ASU ID must be exactly 10 digits (numbers only).';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/signup`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            asurite,
+            email,
+            full_name: fullName,
+            asu_id: asuId,
+            password
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorEl.textContent = data.error || 'Signup failed.';
+          return;
+        }
+
+        successEl.textContent = 'Account created! Redirecting...';
+
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1000);
+
+      } catch (err) {
+        errorEl.textContent = 'Network error. Is the server running?';
+      }
+    });
+
+    document.querySelectorAll('#login-form input').forEach(input => {
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('login-btn').click();
+      });
+    });
+
+    document.querySelectorAll('#signup-form input').forEach(input => {
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('signup-btn').click();
+      });
+    });
+
+    document.getElementById('signup-asurite').addEventListener('input', (e) => {
+      const emailEl = document.getElementById('signup-email');
+      const asurite = e.target.value.trim().toLowerCase();
+      if (asurite && !emailEl.dataset.edited) {
+        emailEl.value = asurite + '@asu.edu';
+      }
+    });
+
+    document.getElementById('signup-email').addEventListener('input', () => {
+      document.getElementById('signup-email').dataset.edited = 'true';
+    });
+  </script>
+</body>
+</html>

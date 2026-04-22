@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "scripts": {
+    "build:wasm": "wasm-pack build --target nodejs --release --out-dir api/pkg-node"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
